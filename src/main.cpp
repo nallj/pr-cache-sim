@@ -1,4 +1,7 @@
-#include <iostream>// includes
+#ifndef _MAIN_
+#define _MAIN_
+
+#include <iostream>
 
 int main(int argc, char** argv){
 
@@ -13,3 +16,5 @@ int main(int argc, char** argv){
 
 	return 0;
 }
+
+#endif

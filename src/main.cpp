@@ -9,10 +9,11 @@
 #include "device.h"
 #include "reader.h"
 
+
 void displayHelp(){
 	std::cout << "This is the help - kind of like a man page" << std::endl << std::endl;
 
-	std::cout << "add Device to simulator wallet" << std::endl
+	std::cout << "add Device to simulator wallet (not yet functional)" << std::endl
 			  << "usage:" << std::endl << "\t./drachma -d DEVICE_FILE [DEVICE_NAME]"
 			  << std::endl << std::endl;
 
@@ -20,15 +21,15 @@ void displayHelp(){
 			  << "usage:" << std::endl << "\t./drachma -h"
 			  << std::endl << std::endl;
 
-	std::cout << "add Memory and replacement algorithm configurations" << std::endl
+	std::cout << "add Memory and replacement algorithm configurations (not yet functional)" << std::endl
 			  << "usage:" << std::endl << "\t./drachma -m MEMORY_FILE [CONFIGURATION_NAME]"
 			  << std::endl << std::endl;
 
-	std::cout << "start Simulation" << std::endl
+	std::cout << "start Simulation (not yet functional)" << std::endl
 			  << "usage:" << std::endl << "\t./drachma -s DEVICE_NAME CONFIGURATION_NAME APPLICATION_NAME"
 			  << std::endl << std::endl;
 
-	std::cout << "add application Trace to simulator wallet" << std::endl
+	std::cout << "add application Trace to simulator wallet (not yet functional)" << std::endl
 			  << "usage:" << std::endl << "\t./drachma -t TRACE_FILE [APPLICATION_NAME]"
 			  << std::endl << std::endl;
 
@@ -37,9 +38,10 @@ void displayHelp(){
 			  << std::endl << std::endl;
 }
 
+
 int main(int argc, char** argv){
 
-	std::cout << std::endl << "Drachma : Reconfigurable Computing Cache Simulator" << std::endl << std::endl;
+	std::cout << std::endl << "Drachma : Reconfigurable Computing Cache Simulator\n\n\n";
 
 	// instantiate drachma wallet
 	wallet library = wallet();
@@ -68,9 +70,9 @@ int main(int argc, char** argv){
     				 * 		./drachma -d DEVICE_FILE [DEVICE_NAME]
     				 */
 
-    				std::vector<std::string> device_args {"family", "model", "slices"};
+    				/*std::vector<std::string> device_args {"family", "model", "slices"};
 
-    				reader device_reader = reader("device.dev", device_args);
+    				reader device_reader = reader("device.dev", device_args);*/
 
     				goto exit;
     			}
@@ -94,10 +96,12 @@ int main(int argc, char** argv){
     				 * 		./drachma -m MEMORY_FILE [CONFIGURATION_NAME]
     				 */
 
-    				std::vector<std::string> memory_params {"name", "main name"};
-    				std::vector<std::string> regex_filter {"[l][1-9] \\bname\\b[:] [\\w ]+"};
+    				/*std::vector<std::string> memory_params {"name", "main name", "main size", "main read latency", "main search latency"};
+    				std::vector<std::string> regex_filter {"[l][1-9] \\bname\\b[:] [\\w ]+",
+    														"[l][1-9] \\bsize\\b[:] [\\w ]+",
+															"[l][1-9] \\b(read|search)\\b \\blatency\\b[:] [\\w ]+"};
 
-    				reader memory_reader = reader("memory.mem", memory_params, regex_filter);
+    				reader memory_reader = reader("memory.mem", memory_params, regex_filter);*/
 
     				goto exit;
     			}
@@ -121,10 +125,10 @@ int main(int argc, char** argv){
     				 * 		./drachma -t TRACE_FILE [APPLICATION_NAME]
     				 */
 
-    				std::vector<std::string> trace_params {"name"};
+    				/*std::vector<std::string> trace_params {"name"};
     				std::vector<std::string> regex_filter {"\\d+"};
 
-    				reader trace_reader = reader("traces.trc", trace_params, regex_filter);
+    				reader trace_reader = reader("traces.trc", trace_params, regex_filter);*/
 
     				goto exit;
     			}
@@ -137,10 +141,7 @@ int main(int argc, char** argv){
     				 * 		./drachma -w
     				 */
 
-    				std::vector<std::string> wallet_params {"name", "d", "m", "t"};
-
-    				reader trace_reader = reader("wallet.wal", wallet_params);
-
+    				library.printDetails();
     				goto exit;
     			}
 
@@ -156,7 +157,7 @@ int main(int argc, char** argv){
     }
 
     exit:
-		std::cout << std::endl << std::endl << std::endl;
+		std::cout << std::endl;
 		return 0;
 }
 

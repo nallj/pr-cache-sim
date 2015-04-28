@@ -22,13 +22,26 @@ name: Virtex-4, XC4VLX15
 		
 		l1 name: "lowest cache level name"
 		l1 size: "lowest cache level size (in module count)"
-			level's supported up to l3
+			level's supported up to l9
 #/
 
 main name: Compact Flash
+main size: 128
+main read latency: 32
+main search latency: 64
 
 l1 name: DDR RAM
+l1 size: 64
+l1 read latency: 16
+l1 search latency: 32
 
 l2 name: BlockRAM
+l2 size: 8
+l2 read latency: 2
+l2 search latency: 4
 
 l3 name: PR Regions
+l3 size: 4
+l3 read latency: 1
+l3 search latency: 2
+

@@ -14,6 +14,7 @@
 #define COMMENT '#'
 #define LONG_COMMENT '/'
 
+
 class reader{
 
 	public:
@@ -26,9 +27,14 @@ class reader{
 
 		void parseEntries(); // search for accepted parameters and regex matches for data body
 
-		bool isValidFile();
-
 		void printEntries();
+
+
+		bool isFileValid();
+
+		std::multimap<std::string, std::string> getParams();
+
+		std::vector<std::string> getData();
 
 	private:
 

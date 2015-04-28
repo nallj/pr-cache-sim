@@ -4,13 +4,16 @@
 #include <string>
 #include <vector>
 
+#include "reader.h"
 #include "storageUnit.h"
 #include "replAlg.h"
+
 
 class device{
 
 	public:
 		device(std::string device_file);
+
 
 		void parseModules(std::string mem_file);
 

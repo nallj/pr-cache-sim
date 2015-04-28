@@ -2,21 +2,22 @@
 #define _MAIN_
 
 #include <iostream>
-#include <string.h>
+#include <string>
+#include <cstring>
+
+#include "wallet.h"
+#include "device.h"
+#include "reader.h"
 
 void displayHelp(){
 	std::cout << "This is the help - kind of like a man page" << std::endl << std::endl;
 
-	std::cout << "add Device to simulator library" << std::endl
+	std::cout << "add Device to simulator wallet" << std::endl
 			  << "usage:" << std::endl << "\t./drachma -d DEVICE_FILE [DEVICE_NAME]"
 			  << std::endl << std::endl;
 
 	std::cout << "Help user - print usage synopsis" << std::endl
 			  << "usage:" << std::endl << "\t./drachma -h"
-			  << std::endl << std::endl;
-
-	std::cout << "list objects contained in the simulator Library" << std::endl
-			  << "usage:" << std::endl << "\t./drachma -l"
 			  << std::endl << std::endl;
 
 	std::cout << "add Memory and replacement algorithm configurations" << std::endl
@@ -27,14 +28,23 @@ void displayHelp(){
 			  << "usage:" << std::endl << "\t./drachma -s DEVICE_NAME CONFIGURATION_NAME APPLICATION_NAME"
 			  << std::endl << std::endl;
 
-	std::cout << "add application Trace to simulator library" << std::endl
+	std::cout << "add application Trace to simulator wallet" << std::endl
 			  << "usage:" << std::endl << "\t./drachma -t TRACE_FILE [APPLICATION_NAME]"
+			  << std::endl << std::endl;
+
+	std::cout << "list objects contained in the simulator Wallet" << std::endl
+			  << "usage:" << std::endl << "\t./drachma -w"
 			  << std::endl << std::endl;
 }
 
 int main(int argc, char** argv){
 
 	std::cout << std::endl << "Drachma : Reconfigurable Computing Cache Simulator" << std::endl << std::endl;
+
+	// instantiate drachma wallet
+	wallet library = wallet();
+	//if(library)
+
 
     if(argc > 1 && argv[1][0] == 0x2D && argv[1][1] != 0){ //switches present
 
@@ -47,18 +57,25 @@ int main(int argc, char** argv){
     		switch_choices[i] = argv[1][i + 1];
 
     	for(int i = 0; i < switch_count; i++){
+
     		switch(switch_choices[i]){
 
-    			case 'd':
+    			case 'd': {
     				/*
-    				 * add device to simulator library
+    				 * add device to simulator wallet
     				 *
     				 * usage:
     				 * 		./drachma -d DEVICE_FILE [DEVICE_NAME]
     				 */
-    				goto exit;
 
-    			case 'h': // help user
+    				std::vector<std::string> device_args {"family", "model", "slices"};
+
+    				reader device_reader = reader("device.dev", device_args);
+
+    				goto exit;
+    			}
+
+    			case 'h': { // help user
     				/*
     				 * help user - print usage synopsis
     				 *
@@ -67,42 +84,65 @@ int main(int argc, char** argv){
     				 */
     				displayHelp();
     				break;
+    			}
 
-    			case 'l':
-    				/*
-    				 * list objects contained in the simulator library
-    				 *
-    				 * usage:
-    				 * 		./drachma -l
-    				 */
-    				break;
-
-    			case 'm':
+    			case 'm': {
     				/*
     				 * add memory and replacement algorithm configurations
     				 *
     				 * usage:
     				 * 		./drachma -m MEMORY_FILE [CONFIGURATION_NAME]
     				 */
-    				goto exit;
 
-    			case 's':
+    				std::vector<std::string> memory_params {"name", "main name"};
+    				std::vector<std::string> regex_filter {"[l][1-9] \\bname\\b[:] [\\w ]+"};
+
+    				reader memory_reader = reader("memory.mem", memory_params, regex_filter);
+
+    				goto exit;
+    			}
+
+    			case 's': {
     				/*
     				 * start simulation
     				 *
     				 * usage:
     				 * 		./drachma -s DEVICE_NAME CONFIGURATION_NAME APPLICATION_NAME
     				 */
-    				goto exit;
 
-    			case 't':
+    				goto exit;
+    			}
+
+    			case 't': {
     				/*
-    				 * add application trace to simulator library
+    				 * add application trace to simulator wallet
     				 *
     				 * usage:
     				 * 		./drachma -t TRACE_FILE [APPLICATION_NAME]
     				 */
+
+    				std::vector<std::string> trace_params {"name"};
+    				std::vector<std::string> regex_filter {"\\d+"};
+
+    				reader trace_reader = reader("traces.trc", trace_params, regex_filter);
+
     				goto exit;
+    			}
+
+    			case 'w': {
+    				/*
+    				 * list objects contained in the simulator wallet
+    				 *
+    				 * usage:
+    				 * 		./drachma -w
+    				 */
+
+    				std::vector<std::string> wallet_params {"name", "d", "m", "t"};
+
+    				reader trace_reader = reader("wallet.wal", wallet_params);
+
+    				goto exit;
+    			}
 
     			default: // unrecognized switch
 					bad_switch = true;
@@ -116,6 +156,7 @@ int main(int argc, char** argv){
     }
 
     exit:
+		std::cout << std::endl << std::endl << std::endl;
 		return 0;
 }
 

@@ -1,0 +1,34 @@
+
+#	Example Memory File for Drachma
+
+name: Virtex-4, XC4VLX15
+
+/#
+	this is where you would put defining parameters
+	to define traits of a memory configuration. a
+	memory configuration describes ..............
+
+	all paramters are of the following format:
+		<param name>: <param value>
+
+	the following are acceptable definitions.
+	descriptions with an astrisk* are required
+		
+		name: "name of the memory configuration"*
+
+		main name: "main memory name"
+		
+		main size: "main memory size (in module count)"
+		
+		l1 name: "lowest cache level name"
+		l1 size: "lowest cache level size (in module count)"
+			level's supported up to l3
+#/
+
+main name: Compact Flash
+
+l1 name: DDR RAM
+
+l2 name: BlockRAM
+
+l3 name: PR Regions

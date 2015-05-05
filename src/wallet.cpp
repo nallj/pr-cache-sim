@@ -6,15 +6,14 @@
 
 /* PUBLIC */
 
-	// wallet acts as a library for drachma
 	wallet::wallet(){
 
 		std::vector<std::string> wallet_params {"name", "d", "m", "t"};
-		reader wallet_reader = reader("wallet.wal", wallet_params);
+		wallet_handler_ = fileHandler("wallet.wal", wallet_params);
 
-		if(wallet_reader.isFileValid()){
+		if(wallet_handler_.isFileValid()){
 
-			std::multimap<std::string, std::string> wallet_contents = wallet_reader.getParams();
+			std::multimap<std::string, std::string> wallet_contents = wallet_handler_.getParams();
 
 			/*std::cout << "> WALLET MULTIMAP <\n";
 			for(std::multimap<std::string,std::string>::iterator it = wallet_contents.begin(); it != wallet_contents.end(); ++it)
@@ -26,7 +25,10 @@
 
 				if(next[0].substr(0, 1) == "d"){ // read in device file
 
-					device new_dev = device(next[1]);
+					std::vector<std::string> dev_params {"family", "model", "slices"};
+					fileHandler dev_reader = fileHandler(next[1], dev_params);
+
+					device new_dev = device(dev_reader);
 					devices_.push_back(new_dev);
 
 				}else if(next[0].substr(0, 1) == "m"){ // read in memory file
@@ -41,9 +43,7 @@
 
 			}
 
-			// wallet initialization complete
-
-		} else std::cout << "\n\nWALLET FILE IS CORRUPT!!!\n\n";
+		} else std::cout << "\n\nError: BAD WALLET FILE!\n\n";
 	}
 
 
@@ -52,14 +52,14 @@
 		std::cout << "The wallet contains " << devices_.size() << " devices, "
 				  << memories_.size() << " memories, and " << trace_files_.size() << " trace files.\n";
 
-		std::cout << "\nDEVICE LIST:\n";
+		std::cout << "\nDEVICE LIST (with ID):\n";
 		for(int i = 0; i < devices_.size(); i++)
-			std::cout << "\t* '" << devices_[i].name_ << "'\n";
+			std::cout << "\t" << i << ") '" << devices_[i].name_ << "'\n";
 
-		std::cout << "\nMEMORY LIST:\n";
+		std::cout << "\nMEMORY LIST (with ID):\n";
 		for(int i = 0; i < memories_.size(); i++){
 
-			std::cout << "   <Start Configuration>\n";
+			std::cout << "   <Start Configuration #" << i << ">\n";
 
 			storageUnit* ptr = &(memories_[i]);
 			while(ptr){
@@ -67,14 +67,38 @@
 				ptr = ptr->getChild();
 			}
 
-			std::cout << "   <End Configuration>\n";
+			std::cout << "   <End Configuration #" << i << ">\n";
 		}
 
-		std::cout << "\nTRACE FILE LIST:\n";
+		std::cout << "\nTRACE FILE LIST (with ID):\n";
 			for(int i = 0; i < trace_files_.size(); i++)
-				std::cout << "\t* " << trace_files_[i] << "\n";
+				std::cout << "\t" << i << ") " << trace_files_[i] << "\n";
 
 		std::cout << std::endl << std::endl;
+	}
+
+	void wallet::addDevice(std::string file_name){
+		wallet_handler_.addToFile("d: " + file_name);
+	}
+
+	bool wallet::removeDevice(std::string file_name){
+		return wallet_handler_.removeFromFile("d: " + file_name);
+	}
+
+	void wallet::addMemory(std::string file_name){
+		wallet_handler_.addToFile("m: " + file_name);
+	}
+
+	bool wallet::removeMemory(std::string file_name){
+		return wallet_handler_.removeFromFile("m: " + file_name);
+	}
+
+	void wallet::addTraceFile(std::string file_name){
+		wallet_handler_.addToFile("t: " + file_name);
+	}
+
+	bool wallet::removeTraceFile(std::string file_name){
+		return wallet_handler_.removeFromFile("t: " + file_name);
 	}
 
 
@@ -88,7 +112,7 @@
 												"[l][1-9] \\b(read|search)\\b \\blatency\\b[:] [\\w ]+"};
 
 
-		reader memory_reader = reader("memory.mem", memory_params, regex_filter);
+		fileHandler memory_reader = fileHandler(memory_file, memory_params, regex_filter);
 
 		if(memory_reader.isFileValid()){
 
@@ -167,5 +191,6 @@
 
 		}else std::cout << "\n\nMEMORY FILE IS CORRUPT!!!\n\n";
 	}
+
 
 #endif

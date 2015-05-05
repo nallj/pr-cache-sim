@@ -6,13 +6,11 @@
 
 /* PUBLIC */
 	storageUnit::storageUnit(unsigned short unit_size, unsigned short int read_latency, unsigned short int search_latency) :
-		unit_size_(unit_size), read_latency_(read_latency), search_latency_(search_latency){
-
-		/* storageUnit* child_unit_;*/
-	}
+		unit_size_(unit_size), read_latency_(read_latency), search_latency_(search_latency), child_unit_(NULL){}
 
 
 	void storageUnit::printDetails(){
+
 		std::cout << "This is a memory object known as '" << name_ << "'\n"
 				  << "\tPARAMS: size(" << unit_size_ << "), read latency(" << read_latency_
 				  << "), search latency(" << search_latency_ << ")\n";
@@ -59,5 +57,6 @@
 	//unsigned short int search_latency_;
 
 	//bool read_lock_;
+
 
 #endif

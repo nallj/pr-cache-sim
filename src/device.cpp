@@ -5,14 +5,12 @@
 
 
 	/* PUBLIC */
-		device::device(std::string device_file){
 
-			std::vector<std::string> device_params {"family", "model", "slices"};
-			reader device_reader = reader(device_file, device_params);
+		device::device(fileHandler device_file){
 
-			if(device_reader.isFileValid()){
+			if(device_file.isFileValid()){
 
-				std::multimap<std::string, std::string> device_contents = device_reader.getParams();
+				std::multimap<std::string, std::string> device_contents = device_file.getParams();
 
 				for(std::multimap<std::string,std::string>::iterator it = device_contents.begin(); it != device_contents.end(); ++it){
 
@@ -30,8 +28,9 @@
 
 				}
 
-			}else std::cout << "\n\nDEVICE FILE IS CORRUPT!!!\n\n";
+			}else std::cout << "\n\nError: BAD DEVICE FILE!\n\n";
 		}
+
 
 		//void parseModules(std::string mem_file);
 

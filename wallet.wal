@@ -9,5 +9,5 @@
 name: My Drachma Wallet
 
 d: device.dev
-m: memory.mem
 t: traces.trc
+m: simple.mem

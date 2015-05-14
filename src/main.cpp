@@ -10,8 +10,8 @@
 #include "device.h"
 #include "fileHandler.h"
 
+
 bool fileExists(const std::string& file){
-	std::cout << "check is: " << ( access(file.c_str(), F_OK) != -1 ) << std::endl;
 	return ( access(file.c_str(), F_OK) != -1 );
 }
 
@@ -49,7 +49,7 @@ void startHelp(){
 	// origin:	drachma -s DEVICE_NAME CONFIGURATION_NAME APPLICATION_NAME
 
 	std::cout << "start Simulation" << std::endl
-			  << "usage:" << std::endl << "\t./drachma -s DEVICE_ID MEMORY_ID TRACE_ID"
+			  << "usage:" << std::endl << "\t./drachma -s DEVICE_ID MEMORY_ID TRACE_ID STOP_AT"
 			  << std::endl << std::endl;
 }
 
@@ -225,9 +225,20 @@ int main(int argc, char** argv){
     				 * 		./drachma -s DEVICE_NAME CONFIGURATION_NAME APPLICATION_NAME
     				 */
 
-    				if(argc == 5){
+    				if(argc == 5 || argc == 6){
 
-    					std::cout << "But nothing happened!";
+    					//std::cout << "But nothing happened!";
+
+    					device sim_device = library.getDevice( atoi(argv[2]) );
+    					storageUnit memory = library.getMemory( atoi(argv[3]) );
+    					std::vector<std::string> trace_file = library.getTraceFile( atoi(argv[4]) );
+
+    					sim_device.parseModules(memory); // apply memory to device
+
+    					if(argc == 5)
+    						sim_device.simulateApplication(trace_file); // apply traces to device (simulate)
+    					else
+    						sim_device.simulateApplication(trace_file, atoi(argv[5])); // apply traces to device until stopping trace is reached
 
     				}else{
     					std::cout << "ERROR: Improper switch use; The operations concerning Starting the Simulator are as followed:\n";

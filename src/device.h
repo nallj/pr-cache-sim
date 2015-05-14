@@ -3,10 +3,12 @@
 
 #include <string>
 #include <vector>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "fileHandler.h"
 #include "storageUnit.h"
-#include "replAlg.h"
+//#include "algs/randomAlg.h"
 
 
 class device{
@@ -15,9 +17,9 @@ class device{
 		device(fileHandler device_file);
 
 
-		void parseModules(std::string mem_file);
+		void parseModules(storageUnit memory_hierarchy);
 
-		void simulateApplication(std::string trace_file);
+		void simulateApplication(std::vector<std::string> trace_file, unsigned long long int stop_ccc = -1);
 
 		std::string name_;
 
@@ -30,9 +32,9 @@ class device{
 
 		unsigned char prr_associativity_;
 
-		std::vector<storageUnit> cache_memory_;
+		std::vector<storageUnit*> memory_hierarchy_;
 		
-		std::vector<replAlg> repl_algs_;
+		//std::vector<replAlg*> repl_algs_;
 };
 
 #endif

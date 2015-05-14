@@ -9,6 +9,7 @@
 #include "fileHandler.h"
 #include "device.h"
 #include "storageUnit.h"
+#include "algs/randomAlg.h" // random replacement
 
 
 // wallet acts as a library for drachma
@@ -32,8 +33,15 @@ class wallet{
 
 		bool removeTraceFile(std::string file_name);
 
-		std::string name_;
 
+		device getDevice(unsigned device_id);
+
+		storageUnit getMemory(unsigned memory_id);
+
+		std::vector<std::string> getTraceFile(unsigned trace_id);
+
+
+		std::string name_;
 
 	private:
 		fileHandler wallet_handler_;

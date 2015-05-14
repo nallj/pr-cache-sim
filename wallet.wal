@@ -11,3 +11,7 @@ name: My Drachma Wallet
 d: device.dev
 t: traces.trc
 m: simple.mem
+
+m: toy.mem
+t: toy.trc
+t: simple.trc

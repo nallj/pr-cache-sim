@@ -1,2 +1,2 @@
-drachma: src/main.cpp src/wallet.h src/fileHandler.h src/fileHandler.cpp src/wallet.cpp src/device.h src/device.cpp src/storageUnit.h src/storageUnit.cpp src/replAlg.h src/module.h
-	g++ -std=c++11  -o drachma src/main.cpp src/wallet.h src/wallet.cpp src/fileHandler.h src/fileHandler.cpp src/device.h src/device.cpp src/storageUnit.h src/storageUnit.cpp src/replAlg.h src/module.h -lboost_regex
+drachma: src/main.cpp src/wallet.h src/fileHandler.h src/fileHandler.cpp src/wallet.cpp src/device.h src/device.cpp src/storageUnit.h src/storageUnit.cpp src/replAlg.h src/module.h src/module.cpp src/algs/randomAlg.h src/algs/randomAlg.cpp
+	g++ -std=c++11  -o drachma src/main.cpp src/wallet.h src/wallet.cpp src/fileHandler.h src/fileHandler.cpp src/device.h src/device.cpp src/storageUnit.h src/storageUnit.cpp src/replAlg.h src/module.h src/module.cpp src/algs/randomAlg.h src/algs/randomAlg.cpp -lboost_regex

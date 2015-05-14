@@ -8,7 +8,10 @@ class module{
 	public:
 		module(unsigned id, unsigned bitstream_width);
 
+
 		unsigned getId();
+
+		void reasignId(unsigned new_id);
 
 		unsigned getSize();
 

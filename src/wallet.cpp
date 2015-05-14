@@ -102,6 +102,25 @@
 	}
 
 
+	device wallet::getDevice(unsigned device_id){
+		return devices_[device_id];
+	}
+
+	storageUnit wallet::getMemory(unsigned memory_id){
+		return memories_[memory_id];
+	}
+
+	std::vector<std::string> wallet::getTraceFile(unsigned trace_id){
+
+		std::vector<std::string> trace_params {"name"};
+		std::vector<std::string> regex_filter {"\\d+"};
+
+		fileHandler trace_reader = fileHandler(trace_files_[trace_id], trace_params, regex_filter);
+
+		return trace_reader.getData();
+	}
+
+
 /* PRIVATE */
 
 	storageUnit wallet::buildMemoryHierarchy(std::string memory_file){
@@ -140,8 +159,13 @@
 					main_mem_search = next[1];
 			}
 
-			storageUnit main_memory = storageUnit(std::stoi(main_mem_size), std::stoi(main_mem_read), std::stoi(main_mem_search));
+			storageUnit main_memory = storageUnit(std::stoi(main_mem_size), NULL, std::stoi(main_mem_read), std::stoi(main_mem_search));
 			main_memory.name_ = main_mem_name;
+
+			// initialize main memory's modules
+			for(unsigned i = 0; i < std::stoi(main_mem_size); i++)
+				main_memory.insertModule( new module(i, 777) );
+					// todo: bitstream width is arbitrary since it is not used yet in Drachma
 
 
 			// create levels (up to L9) of cache based on data parameters
@@ -179,7 +203,11 @@
 
 				for(int i = 1; i <= lowest_level; i++){
 
-					storageUnit* child = new storageUnit(level_size[i], level_read[i], level_search[i]);
+					// currently, random replacement is the old alg being tested
+					replAlg* default_alg = new randomAlg("Random Replacement", level_size[i]);
+
+					storageUnit* child = new storageUnit(level_size[i], default_alg, level_read[i], level_search[i]);
+
 					child->name_ = level_name[i];
 
 					parent->setChild(child);

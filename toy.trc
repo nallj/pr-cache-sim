@@ -1,0 +1,138 @@
+
+#	Toy Trace File for Drachma
+
+name: toy (a made-up application)
+
+/#
+	this is where you would put defining parameters
+	to define traits of a memory configuration. a
+	memory configuration describes ..............
+
+	all paramters are of the following format:
+		<param name>: <param value>
+
+	the following are acceptable definitions.
+	descriptions with an astrisk* are required
+		
+		name: "name of the application traces are
+			collected from"*
+#/
+
+/#
+	Tools used to generate file:
+		Generate List of Numbers <http://randomnumbergenerator.intemodino.com/>
+		Delimited to Column <http://delim.co/>
+		Remove Empty Lines <http://textmechanic.com/Remove-Empty-Lines.html>
+#/
+
+
+# Test basic cache miss inserts
+0
+3
+8
+
+# Test a cache hit
+8
+0
+
+# Now intermingle
+9
+5
+10
+11
+4
+11
+14
+2
+1
+7
+2
+10
+11
+15
+1
+7
+14
+12
+13
+14
+9
+11
+5
+11
+13
+12
+11
+1
+11
+9
+15
+14
+3
+14
+1
+8
+15
+13
+2
+11
+1
+9
+2
+13
+11
+1
+12
+9
+9
+14
+9
+12
+13
+15
+15
+7
+15
+2
+4
+14
+4
+14
+7
+13
+12
+6
+8
+9
+3
+10
+15
+14
+13
+11
+5
+0
+12
+4
+4
+10
+9
+8
+7
+11
+2
+15
+8
+11
+6
+11
+8
+2
+7
+15
+14
+0
+7
+8
+13
+5

@@ -6,28 +6,31 @@
 //#include <utility>
 
 #include "module.h"
+#include "replAlg.h"
 
 
 class storageUnit{
 
 	public:
-		storageUnit(unsigned short unit_size, unsigned short int read_latency, unsigned short int search_latency);
+		storageUnit(unsigned short unit_size, replAlg* repl_alg, unsigned short int read_latency, unsigned short int search_latency);
 
 
+		// Operational Methods //
 		void printDetails();
+
+		void attemptModule(unsigned module_index);
 
 		bool isModulePresent(unsigned module_index);
 
-		bool hasSpace(module& new_module);
-
-		void evictModule(unsigned module_index);
+		void insertModule(module* new_module);
 
 
+		// Getters //
 		unsigned short getSize();
 
 		std::vector<module*>& getModuleTable();
 
-		module& getModule(unsigned module_index);
+		module* getModule(unsigned module_index);
 
 		storageUnit* getChild();
 
@@ -38,8 +41,7 @@ class storageUnit{
 		bool availableToRead();
 
 
-		void insertModule(module& new_module);
-
+		// Mutators //
 		void setChild(storageUnit* child_level);
 
 		void toggleReadLock();
@@ -47,11 +49,20 @@ class storageUnit{
 
 		std::string name_;
 
-
 	private:
+		// Operational Methods //
+		void updateAlg(bool read_hit, unsigned module_index);
+
+		bool hasSpace();
+
+		void evictModule(unsigned table_index);
+
+
 		unsigned short unit_size_;
 
 		std::vector<module*> module_table_;
+
+		replAlg* replacement_alg_;
 
 		storageUnit* child_unit_;
 

@@ -9,8 +9,6 @@
 	randomAlg::randomAlg(std::string name, unsigned max_size) :
 			replAlg(name, max_size){ }
 
-	// with random replacement, nothing occurs with a read hit
-	void randomAlg::readHitUpdate(unsigned module_index){}
 
 	void randomAlg::newEntryUpdate(unsigned module_index){
 
@@ -24,7 +22,7 @@
 	unsigned randomAlg::replace(unsigned module_index){
 
 		unsigned next_victim = evictNext();
-		std::cout << "RAND REPL: index #" << tag_table_[next_victim].second << " @ table[" << next_victim << "]\n";
+		std::cout << "RAND REPL: victim is module#" << tag_table_[next_victim].second << " @ table[" << next_victim << "]\n";
 
 		tag_table_.erase(tag_table_.begin() + next_victim);
 

@@ -49,7 +49,7 @@ void startHelp(){
 	// origin:	drachma -s DEVICE_NAME CONFIGURATION_NAME APPLICATION_NAME
 
 	std::cout << "start Simulation" << std::endl
-			  << "usage:" << std::endl << "\t./drachma -s DEVICE_ID MEMORY_ID TRACE_ID STOP_AT"
+			  << "usage:" << std::endl << "\t./drachma -s DEVICE_ID MEMORY_ID TRACE_ID STOP_AT_CC"
 			  << std::endl << std::endl;
 }
 
@@ -226,8 +226,6 @@ int main(int argc, char** argv){
     				 */
 
     				if(argc == 5 || argc == 6){
-
-    					//std::cout << "But nothing happened!";
 
     					device sim_device = library.getDevice( atoi(argv[2]) );
     					storageUnit memory = library.getMemory( atoi(argv[3]) );

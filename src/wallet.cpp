@@ -52,14 +52,14 @@
 		std::cout << "The wallet contains " << devices_.size() << " devices, "
 				  << memories_.size() << " memories, and " << trace_files_.size() << " trace files.\n";
 
-		std::cout << "\nDEVICE LIST (with ID):\n";
+		std::cout << "\n\t== DEVICE LIST (with ID): == \n";
 		for(int i = 0; i < devices_.size(); i++)
-			std::cout << "\t" << i << ") '" << devices_[i].name_ << "'\n";
+			std::cout << "\t\t" << i << ") '" << devices_[i].name_ << "' <" << devices_[i].file_ << ">\n";
 
-		std::cout << "\nMEMORY LIST (with ID):\n";
+		std::cout << "\n\n\t== MEMORY LIST (with ID): ==\n";
 		for(int i = 0; i < memories_.size(); i++){
 
-			std::cout << "   <Start Configuration #" << i << ">\n";
+			std::cout << "\t\t" << i << ") '" << memories_[i].name_ << "' <" << memories_[i].file_ << ">\n";
 
 			storageUnit* ptr = &(memories_[i]);
 			while(ptr){
@@ -67,12 +67,12 @@
 				ptr = ptr->getChild();
 			}
 
-			std::cout << "   <End Configuration #" << i << ">\n";
+			std::cout << "\n";
 		}
 
-		std::cout << "\nTRACE FILE LIST (with ID):\n";
+		std::cout << "\n\t== TRACE FILE LIST (with ID): ==\n";
 			for(int i = 0; i < trace_files_.size(); i++)
-				std::cout << "\t" << i << ") " << trace_files_[i] << "\n";
+				std::cout << "\t\t" << i << ") " << trace_files_[i] << "\n";
 
 		std::cout << std::endl << std::endl;
 	}
@@ -160,18 +160,20 @@
 			}
 
 			storageUnit main_memory = storageUnit(std::stoi(main_mem_size), NULL, std::stoi(main_mem_read), std::stoi(main_mem_search));
-			main_memory.name_ = main_mem_name;
+			//storageUnit main_memory = storageUnit(mem_name, memory_file, std::stoi(main_mem_size), NULL, std::stoi(main_mem_read), std::stoi(main_mem_search));
+			if(mem_name != "") main_memory.name_ = main_mem_name;
+			main_memory.file_ = memory_file;
 
 			// initialize main memory's modules
 			for(unsigned i = 0; i < std::stoi(main_mem_size); i++)
 				main_memory.insertModule( new module(i, 777) );
-					// todo: bitstream width is arbitrary since it is not used yet in Drachma
+					// todo: bitstream width is arbitrary since it is not yet considered in Drachma
 
 
 			// create levels (up to L9) of cache based on data parameters
 			std::vector<std::string> level_params = memory_reader.getData();
 			std::string level_name[10];
-			int level_size[10], level_read[10], level_search[10], lowest_level = 0;
+			int level_size[10], level_read[10], level_search[10], highest_level = 0;
 
 			for(int i = 0; i < level_params.size(); i++){
 
@@ -179,8 +181,8 @@
 				std::string param = level_params[i].substr(3, level_params[i].find(":") - 3); // grab rest of param
 				std::string arg = level_params[i].substr(level_params[i].find(":") + 2); // grab param value
 
-				if(lowest_level < which_level) // keep track of the lowest level declared
-					lowest_level = which_level;
+				if(highest_level < which_level) // keep track of the lowest level declared
+					highest_level = which_level;
 
 				if(param == "name") // read in level's name
 					level_name[which_level] = arg + " [L" + std::to_string(which_level) + "]";
@@ -196,19 +198,22 @@
 			}
 
 
-			// if cache levels have been declared, link them all together from the main memory to the lowest level
-			if(lowest_level > 0){
+			// if cache levels have been declared, link them all together from the lowest level to the main memory
+			if(highest_level > 0){
 
 				storageUnit* parent = &main_memory;
 
-				for(int i = 1; i <= lowest_level; i++){
+				for(int i = highest_level; i > 0; i--){
 
-					// currently, random replacement is the old alg being tested
-					replAlg* default_alg = new randomAlg("Random Replacement", level_size[i]);
+					// use only random replacement
+					//replAlg* default_alg = new randomAlg("Random Replacement", level_size[i]);
+					// use only random replacement
+					replAlg* default_alg = new fifoAlg("FIFO Replacement", level_size[i]);
 
 					storageUnit* child = new storageUnit(level_size[i], default_alg, level_read[i], level_search[i]);
 
 					child->name_ = level_name[i];
+					if(i != highest_level) child->setParent(parent); // dont make main memory the parent of Ln
 
 					parent->setChild(child);
 					parent = child;

@@ -5,11 +5,13 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <map>
 
 #include "fileHandler.h"
 #include "device.h"
 #include "storageUnit.h"
-#include "algs/randomAlg.h" // random replacement
+//#include "algs/randomAlg.h" // random replacement
+#include "algs/fifoAlg.h" // fifo replacement
 
 
 // wallet acts as a library for drachma
@@ -53,6 +55,8 @@ class wallet{
 		std::vector<storageUnit> memories_;
 
 		std::vector<std::string> trace_files_;
+		//std::vector< std::pair<std::string, std::string> > trace_files_;
+			// trace file name and file name
 };
 
 

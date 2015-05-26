@@ -1,7 +1,7 @@
 
 #	Example Memory File for Drachma
 
-name: Virtex-4, XC4VLX15
+name: Toy Miniature Memory Configuration
 
 /#
 	this is where you would put defining parameters
@@ -26,17 +26,17 @@ name: Virtex-4, XC4VLX15
 #/
 
 main name: Compact Flash
-main size: 128
-main read latency: 32
-main search latency: 64
+main size: 16
+main read latency: 3
+main search latency: 4
 
-l1 name: BlockRAM
-l1 size: 64
-l1 read latency: 16
-l1 search latency: 32
-
-l2 name: PR Regions
-l2 size: 32
+l2 name: BlockRAM
+l2 size: 8
 l2 read latency: 2
-l2 search latency: 4
+l2 search latency: 3
+
+l1 name: PR Regions
+l1 size: 4
+l1 read latency: 1
+l1 search latency: 2
 

@@ -14,6 +14,8 @@ class storageUnit{
 	public:
 		storageUnit(unsigned short unit_size, replAlg* repl_alg, unsigned short int read_latency, unsigned short int search_latency);
 
+		storageUnit(std::string name, std::string file_name, unsigned short unit_size, replAlg* repl_alg, unsigned short int read_latency, unsigned short int search_latency);
+
 
 		// Operational Methods //
 		void printDetails();
@@ -32,6 +34,8 @@ class storageUnit{
 
 		module* getModule(unsigned module_index);
 
+		storageUnit* getParent();
+
 		storageUnit* getChild();
 
 		unsigned short int getReadLatency();
@@ -42,16 +46,19 @@ class storageUnit{
 
 
 		// Mutators //
+		void setParent(storageUnit* parent_level);
+
 		void setChild(storageUnit* child_level);
 
 		void toggleReadLock();
 
 
-		std::string name_;
+		std::string name_, file_;
 
 	private:
 		// Operational Methods //
-		void updateAlg(bool read_hit, unsigned module_index);
+		//void updateAlg(bool is_eviction, unsigned module_index);
+		//void updateAlg(bool read_hit, unsigned module_index);
 
 		bool hasSpace();
 
@@ -64,6 +71,7 @@ class storageUnit{
 
 		replAlg* replacement_alg_;
 
+		storageUnit* parent_unit_;
 		storageUnit* child_unit_;
 
 		unsigned short int read_latency_;

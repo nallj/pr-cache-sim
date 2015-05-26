@@ -21,7 +21,7 @@ class device{
 
 		void simulateApplication(std::vector<std::string> trace_file, unsigned long long int stop_ccc = -1);
 
-		std::string name_;
+		std::string name_, file_;
 
 	private:
 		storageUnit& associativityToRegion(unsigned module_index);

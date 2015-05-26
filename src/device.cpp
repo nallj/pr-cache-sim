@@ -6,7 +6,7 @@
 
 	/* PUBLIC */
 
-		device::device(fileHandler device_file){
+		device::device(fileHandler device_file) : file_(device_file.input_file_){
 
 			if(device_file.isFileValid()){
 
@@ -34,12 +34,15 @@
 
 		void device::parseModules(storageUnit memory_hierarchy){
 
-			// NEXT 5 LINE IS THE OFFENDING CODE
 			storageUnit* ptr = new storageUnit(memory_hierarchy);
 			memory_hierarchy_.push_back(ptr);
 
+			std::vector<storageUnit*> reversal_list;
 			while( ptr = ptr->getChild() )
-				memory_hierarchy_.push_back(ptr);
+				reversal_list.push_back(ptr);
+
+			for(int i = reversal_list.size() - 1; i >= 0; i--)
+				memory_hierarchy_.push_back( reversal_list[i] );
 
 
 			/*storageUnit* ptr = &memory_hierarchy;
@@ -83,49 +86,155 @@
 
 			unsigned long long int ccc = 0; // clock cycle count
 			unsigned long long int max_ccc = -1;
+			unsigned traces_processed = 0;
 
-			unsigned latency_counters[memory_hierarchy_.size()];
+			// arrays are used instead of single variables in preparation for
+			// asynchronous level processing in future Drachma iterations
+			unsigned short latency_counters[memory_hierarchy_.size()];
 			bool isSearching[memory_hierarchy_.size()]; // false implies reading
 
-
-			for(; ccc < trace_file.size(); ccc++){
-
-				std::cout << "\n<TRACE " << ccc << ">\n";
-
-				//std::string next_addr = trace_file[ccc];
-				unsigned next_addr = stoi( trace_file[ccc] ); // no validation?
-
-				//signed short whos_busy = -1;
-				// search for first busy level
+			unsigned next_addr = 0;
+			unsigned short whos_busy = 1; // always begin with L1
+			std::string busy_slug; // short, human-friendly name of who is busy
+			bool addr_resolved = true;
 
 
-				// FOR NOW THE ONLY CONCERN IS TO TEST AN L1
-				// find a place for the new module
-				memory_hierarchy_[1]->attemptModule(next_addr);
+			// main simulation loop
+			for(; traces_processed < trace_file.size(); ccc++){
 
+				if(whos_busy > 0) busy_slug = "L" + std::to_string(whos_busy);
+				else busy_slug = "Main Memory";
 
+				std::cout << "\n<CC Count: " << ccc << " / Traces Accessed: " << traces_processed << " / ASKING: " << busy_slug << " for " << std::stoi( trace_file[traces_processed] ) << ">\n";
 
+				// todo: make sure each memory level is busy (if possible); asynchronous search and reads?
 
+				// initiate search cycle on level "whos_busy"
+				if(memory_hierarchy_[whos_busy]->availableToRead()){
 
+					if(addr_resolved){
+						addr_resolved = false;
+						next_addr = std::stoi( trace_file[traces_processed] );
+					}
 
+					memory_hierarchy_[whos_busy]->toggleReadLock();
 
-				// DEBUG: solid module index check; test for Ln's contents
-				if(ccc == stop_ccc || ccc == (trace_file.size() - 1)){ // only test up to "stop_ccc" traces or the end of trace
-					std::cout << "\n";
+					latency_counters[whos_busy] = memory_hierarchy_[whos_busy]->getSearchLatency();
+					std::cout << busy_slug << " is busy SEARCHING [" << --latency_counters[whos_busy] << " more cc]; must WAIT\n";
 
-					for(unsigned short n = memory_hierarchy_.size() - 1; 0 < n; n--){
-						std::cout << "\n\t>>> Contents of L" << n << " <<<\n";
+					isSearching[whos_busy] = true;
 
-						for(int i = 0; i < memory_hierarchy_[0]->getSize(); i++){
-							if(memory_hierarchy_[n]->isModulePresent( i ))
-								std::cout << "module " << i << " is PRESENT @ L" << n << "\n";
-							else
-								std::cout << "module " << i << " is not present @ L" << n << "\n";
+				// continue interaction with specific memory level
+				}else{
+
+					// busy searching memory level
+					if(isSearching[whos_busy]){
+
+						// search cycle
+						if(--latency_counters[whos_busy] > 0)
+							std::cout << busy_slug << " is busy SEARCHING [" << latency_counters[whos_busy] << " more cc]; must WAIT\n";
+
+						// search completed
+						else{
+							std::cout << busy_slug << " is done SEARCHING";
+
+							// if memory module present
+							if(memory_hierarchy_[whos_busy]->isModulePresent(next_addr)){
+								std::cout << "  -  the module is at this level, begin READING\n";
+
+								isSearching[whos_busy] = false; // begin reading phase
+								latency_counters[whos_busy] = memory_hierarchy_[whos_busy]->getReadLatency();
+
+							// module was not found at this level
+							}else{
+								std::cout << "  -  module not present, SEARCH next level\n";
+
+								memory_hierarchy_[whos_busy]->toggleReadLock();
+
+								if(whos_busy == memory_hierarchy_.size() - 1)
+									whos_busy = 0; // not found in cache, request from main mem
+								else
+									whos_busy++; // search in next level of cache
+							}
 						}
+
+					// or busy reading
+					}else{
+
+						// read cycle
+						if(--latency_counters[whos_busy] > 0)
+							std::cout << busy_slug << " is busy READING [" << latency_counters[whos_busy] << " more cc]; must WAIT\n";
+
+						else{
+							std::cout << busy_slug << " is done READING\n";
+								// cache hit is achieved
+
+							if(whos_busy != 1) memory_hierarchy_[1]->attemptModule(next_addr);
+								// update lowest level of cache if not in lowest cache
+							memory_hierarchy_[whos_busy]->toggleReadLock();
+
+							whos_busy = 1;
+							addr_resolved = true;
+							traces_processed++;
+						}
+					}
+
+				}
+
+
+
+
+
+				// DEBUG: MULTI COLUMNLAR - solid module index check; test for Li's contents
+				if(ccc == stop_ccc || traces_processed == (trace_file.size() - 1)){ // only test up to "stop_ccc" traces or the end of trace
+					std::cout << "\n\n";
+
+					for(int i = 0; i < memory_hierarchy_[0]->getSize(); i++){
+
+						if(i == 0){
+							for(unsigned short j = memory_hierarchy_.size() - 1; 0 < j; j--){
+								std::cout << "\t>>> Contents of L" << j << " <<<";
+
+								if(j != 1) std::cout << "\t\t\t";
+							}
+
+							std::cout << "\n";
+						}
+
+						for(unsigned short j = memory_hierarchy_.size() - 1; 0 < j; j--){
+
+							if(memory_hierarchy_[j]->isModulePresent( i ))
+								std::cout << "module " << i << " is PRESENT @ L" << j;
+							else
+								std::cout << "module " << i << " is not present @ L" << j;
+
+							if(j == 1) std::cout << "\n";
+							else  std::cout << "\t\t\t";
+						}
+
 					}
 
 					break;
 				}
+
+
+				// DEBUG: SINGLE COLUNAR - solid module index check; test for Li's contents
+				/*if(ccc == stop_ccc || traces_processed == (trace_file.size() - 1)){ // only test up to "stop_ccc" traces or the end of trace
+					std::cout << "\n";
+
+					for(unsigned short i = memory_hierarchy_.size() - 1; 0 < i; i--){
+						std::cout << "\n\t>>> Contents of L" << i << " <<<\n";
+
+						for(int j = 0; j < memory_hierarchy_[0]->getSize(); j++){
+							if(memory_hierarchy_[i]->isModulePresent( j ))
+								std::cout << "module " << j << " is PRESENT @ L" << i << "\n";
+							else
+								std::cout << "module " << j << " is not present @ L" << i << "\n";
+						}
+					}
+
+					break;
+				}*/
 
 				// safety stop
 				//if(ccc == 101) break;

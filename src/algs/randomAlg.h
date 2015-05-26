@@ -13,7 +13,7 @@ class randomAlg : public replAlg{
 		randomAlg(std::string name, unsigned max_size);
 
 
-		void readHitUpdate(unsigned module_index); // with random replacement, nothing occurs with a read hit
+		//void updateTable(unsigned module_index);
 
 		void newEntryUpdate(unsigned module_index);
 

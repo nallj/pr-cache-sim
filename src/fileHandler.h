@@ -51,10 +51,9 @@ class fileHandler{
 
 		std::vector<std::string> getData();
 
-	private:
-
 		std::string input_file_;
 
+	private:
 		bool is_valid_ = true;
 
 		std::vector<std::string> acceptable_params_;

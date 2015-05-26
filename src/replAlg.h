@@ -11,7 +11,10 @@
 class replAlg{
 
 	public:
-		virtual void readHitUpdate(unsigned module_index) = 0;
+		//virtual void readHitUpdate(unsigned module_index) = 0;
+		//virtual void replaceUpdate(unsigned module_index) = 0;
+
+		//virtual void updateTable(unsigned module_index) = 0;
 
 		virtual void newEntryUpdate(unsigned module_index) = 0;
 
@@ -21,14 +24,14 @@ class replAlg{
 		std::string name_;
 
 		// DEBUG FUNCTIONS //
-			virtual void printName(){ std::cout << "Replacement algorithm is known as \"" << name_ << "\".\n"; }
+			virtual void printName(){ std::cout << "\t\t\t\tReplacement:  '" << name_ << "'.\n"; }
 
 			virtual void printTable(){
 
-				std::cout << "Printing tag table of \"" << name_ << "\".\n";
+				std::cout << "\tPrinting tag table of \"" << name_ << "\".\n";
 
 				for(unsigned i = 0; i < tag_table_.size(); i++)
-					std::cout << "\t" << i << "\t" << tag_table_[i].second << " <" << tag_table_[i].first << ">\n";
+					std::cout << "\t\t" << i << "\t" << tag_table_[i].second << " <" << tag_table_[i].first << ">\n";
 			}
 
 

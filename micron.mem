@@ -1,7 +1,7 @@
 
 #	Example Memory File for Drachma
 
-name: Simple Memory Configuration
+name: Micron Nano Memory Configuration
 
 /#
 	this is where you would put defining parameters
@@ -28,12 +28,7 @@ name: Simple Memory Configuration
 
 main name: Compact Flash
 main size: 16
-main read latency: 3
+main read latency: 2
 main search latency: 4
 
-l1 name: BlockRAM
-l1 size: 8
-l1 read latency: 2
-l1 search latency: 3
-
-rcr count: 4
+rcr count: 8

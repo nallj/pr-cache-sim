@@ -32,9 +32,10 @@
 		}
 
 
+		// todo: consider changing name to "associateHierarchy"
 		void device::parseModules(storageUnit memory_hierarchy){
 
-			storageUnit* ptr = new storageUnit(memory_hierarchy);
+			/*storageUnit* ptr = new storageUnit(memory_hierarchy);
 			memory_hierarchy_.push_back(ptr);
 
 			std::vector<storageUnit*> reversal_list;
@@ -42,14 +43,24 @@
 				reversal_list.push_back(ptr);
 
 			for(int i = reversal_list.size() - 1; i >= 0; i--)
-				memory_hierarchy_.push_back( reversal_list[i] );
+				memory_hierarchy_.push_back( reversal_list[i] );*/
+
+			// is this necessary?
+			memory_hierarchy_top_ = &memory_hierarchy;
+
+			/*storageUnit* ptr = memory_hierarchy_top_;
+			while(ptr != NULL){
+				ptr->printDetails();
+				ptr = ptr->getChild();
+			}*/
 
 
-			/*storageUnit* ptr = &memory_hierarchy;
+
+			/**/storageUnit* ptr = &memory_hierarchy;
 			memory_hierarchy_.push_back(ptr);
 
 			while( ptr = ptr->getChild() )
-			memory_hierarchy_.push_back(ptr);*/
+				memory_hierarchy_.push_back(ptr);
 
 
 			/*for(int i = 0; i < memory_hierarchy_.size(); i++)
@@ -84,142 +95,655 @@
 
 		void device::simulateApplication(std::vector<std::string> trace_file, unsigned long long int stop_ccc){
 
-			unsigned long long int ccc = 0; // clock cycle count
+			/*unsigned depth = 0;
+			storageUnit* ptr = memory_hierarchy_top_;
+			while(ptr){
+				ptr = ptr->getChild();
+				depth++;
+			}*/
+
+
+
+
+			// clock cycle count
+			unsigned long long int ccc = 0;
 			unsigned long long int max_ccc = -1;
-			unsigned traces_processed = 0;
 
-			// arrays are used instead of single variables in preparation for
-			// asynchronous level processing in future Drachma iterations
-			unsigned short latency_counters[memory_hierarchy_.size()];
-			bool isSearching[memory_hierarchy_.size()]; // false implies reading
+			unsigned trace_pointer = 0; // formerly "traces_processed"
+			unsigned short rr_count = memory_hierarchy_[0]->getSize();
+			unsigned last_level = memory_hierarchy_.size() - 1; // last level, main memory
 
-			unsigned next_addr = 0;
-			unsigned short whos_busy = 1; // always begin with L1
-			std::string busy_slug; // short, human-friendly name of who is busy
-			bool addr_resolved = true;
+
+			// initialize rr_action <trace_id, action>
+			std::pair<unsigned, memAction> rr_action[rr_count];
+
+			// initialize action queues and transfer waiting
+			std::vector<std::queue< std::pair<unsigned, unsigned> >> rr_action_queue; // trace id, waiting level
+			std::vector<std::queue< std::pair<unsigned, memAction> >> cache_action_queue;
+			std::vector<std::pair<bool, unsigned>> transfer_waiting; // currently waiting, trace id
+
+			// prepare action queues and transfer waiting
+			for(unsigned i = 0; i < memory_hierarchy_[0]->getSize(); i++)
+				rr_action_queue.push_back(std::queue< std::pair<unsigned, unsigned> >());  // trace id, level
+			for(unsigned i = 0; i < rr_count; i++)
+				rr_action[i] = std::make_pair(-1, VACANT);
+			for(unsigned i = 0; i < last_level; i++)
+				cache_action_queue.push_back(std::queue< std::pair<unsigned, memAction> >());
+			for(unsigned i = 0; i < last_level; i++)
+				transfer_waiting.push_back(std::make_pair(false, -1));
+
+			// initialize latency counters
+			unsigned short rr_latency_counters[rr_count]; // [rr_action_queue.size()];
+			unsigned short cache_latency_counters[cache_action_queue.size()];
+			bool after_wait_lock[cache_action_queue.size()];
+
+			////
+			// replace rr_latency counter and rr_action queue with simple rr_executions<trace_id, counter>[r]?
+
+			// initialize last trace processed
+			std::pair<unsigned, memAction> rr_last_trace[rr_count];
+			std::pair<unsigned, memAction> cache_last_trace[cache_action_queue.size()];
+
+			// prepare last trace processed
+			for(unsigned i = 0; i < rr_count; i++)
+				rr_last_trace[i] = std::make_pair(-1, IDLE);
+			for(unsigned i = 0; i < cache_action_queue.size(); i++){
+				cache_last_trace[i] = std::make_pair(-1, UNKNOWN);
+				after_wait_lock[i] = false;
+			}
+
+
+
+			////
+			std::cout << ">> After RRs, there are " << (last_level - 1) << " cache levels before the main memory; total of "
+					  << (last_level + 1) << " <<\n\n\n";
 
 
 			// main simulation loop
-			for(; traces_processed < trace_file.size(); ccc++){
+			for(; trace_pointer < trace_file.size(); ccc++){
 
-				if(whos_busy > 0) busy_slug = "L" + std::to_string(whos_busy);
-				else busy_slug = "Main Memory";
+				// interpret incoming trace
+				unsigned mod_id, request_time, duration;
+				std::tuple<unsigned, unsigned, unsigned> parsed_trace = parseTrace( trace_file[trace_pointer] );
 
-				std::cout << "\n<CC Count: " << ccc << " / Traces Accessed: " << traces_processed << " / ASKING: " << busy_slug << " for " << std::stoi( trace_file[traces_processed] ) << ">\n";
+				mod_id = std::get<0>(parsed_trace);
+				request_time = std::get<1>(parsed_trace);
+				duration = std::get<2>(parsed_trace);
+				// /interpret
 
-				// todo: make sure each memory level is busy (if possible); asynchronous search and reads?
 
-				// initiate search cycle on level "whos_busy"
-				if(memory_hierarchy_[whos_busy]->availableToRead()){
+				// print clock cycle header
+				std::cout << "<<< CC Count: " << ccc << " / Traces Accessed: " << trace_pointer;
 
-					if(addr_resolved){
-						addr_resolved = false;
-						next_addr = std::stoi( trace_file[traces_processed] );
-					}
+				if(request_time == ccc)
+					std::cout << " / NEXT REQUEST: " << trace_file[trace_pointer] << " >>>";
+				else
+					std::cout << " >>>";
+				// /header
 
-					memory_hierarchy_[whos_busy]->toggleReadLock();
 
-					latency_counters[whos_busy] = memory_hierarchy_[whos_busy]->getSearchLatency();
-					std::cout << busy_slug << " is busy SEARCHING [" << --latency_counters[whos_busy] << " more cc]; must WAIT\n";
+				// actions occurring this clock cycle
+				for(unsigned level = 0; level <= last_level; level++){
 
-					isSearching[whos_busy] = true;
+					// INITIALIZATION CASE, delegate request for next trace (0 latency action)
+					if(request_time == ccc && level == 0){
 
-				// continue interaction with specific memory level
-				}else{
+						////
+						std::cout << "\nThis module is ";
 
-					// busy searching memory level
-					if(isSearching[whos_busy]){
+						unsigned target_rr = mod_id % rr_count;
 
-						// search cycle
-						if(--latency_counters[whos_busy] > 0)
-							std::cout << busy_slug << " is busy SEARCHING [" << latency_counters[whos_busy] << " more cc]; must WAIT\n";
+						// is module already here
+						if(memory_hierarchy_[0]->isModulePresent(mod_id)){
 
-						// search completed
-						else{
-							std::cout << busy_slug << " is done SEARCHING";
+							////
+							std::cout << "PRESENT in RR[" << target_rr << "] - ";
 
-							// if memory module present
-							if(memory_hierarchy_[whos_busy]->isModulePresent(next_addr)){
-								std::cout << "  -  the module is at this level, begin READING\n";
+							// if not running, begin running
+							if(rr_action[target_rr].second == IDLE){
 
-								isSearching[whos_busy] = false; // begin reading phase
-								latency_counters[whos_busy] = memory_hierarchy_[whos_busy]->getReadLatency();
+								rr_action[target_rr].second = EXECUTE;
+								//trace_pointer++;
 
-							// module was not found at this level
+								////
+								std::cout << "begin EXECUTING module# " << mod_id;
+
+							// if running, add task to RR's action queue
 							}else{
-								std::cout << "  -  module not present, SEARCH next level\n";
+								rr_action_queue[target_rr].push(std::make_pair(trace_pointer, 0));
 
-								memory_hierarchy_[whos_busy]->toggleReadLock();
+								////
+								std::cout << "can't EXECUTE because RR[" << target_rr << "] is still in use.";
+							}
 
-								if(whos_busy == memory_hierarchy_.size() - 1)
-									whos_busy = 0; // not found in cache, request from main mem
-								else
-									whos_busy++; // search in next level of cache
+							trace_pointer++;
+
+						// module not present, look deeper into the hierarchy
+						}else{
+
+							cache_action_queue[0].push( std::make_pair(trace_pointer, SEARCH) );
+
+							////
+							std::cout << "NOT PRESENT at RR[" << target_rr << "] - increase search depth (to ";
+							if(level + 1 == last_level) std::cout << "Main Memory)";
+							else std::cout << "L" << (level + 1) << ")";
+
+							trace_pointer++;
+						}
+
+					} // /init case
+
+
+
+
+
+
+					// print states of RRs and memory level action queues
+					if(level == 0){
+
+						unsigned next_trace_id;
+						std::tuple<unsigned, unsigned, unsigned> next_trace;
+
+						for(unsigned short r = 0; r < rr_count; r++){
+
+							if(r % 8 == 0)
+								std::cout << "\n";
+							std::cout << "RR[" << r << "]: ";
+
+							memAction next_action = rr_action[r].second;
+
+							//// is UNKNOWN necessary anymore?
+							if(next_action != UNKNOWN && next_action != VACANT){
+
+								next_trace_id = rr_action[r].first;
+								next_trace = parseTrace( trace_file[next_trace_id] );
+
+								std::cout << std::get<0>(next_trace);
+
+							}else if(next_action == VACANT){
+								std::cout << "⟨VACANT⟩";
+							}
+
+							switch(next_action){
+								case TRANSFER: std::cout << " ⟨TRANSFERING⟩"; break;
+								case EXECUTE: std::cout << " ⟨EXECUTING⟩"; break;
+								case IDLE: std::cout << " ⟨IDLE⟩";
+							}
+
+							if(r + 1 != rr_count) std::cout << "    ";
+						}
+
+						std::cout << "\n\n\u2014\u2014 ACTION QUEUES \u2014\u2014\n"; // __ __
+						for(unsigned short a = 0; a < 19; a++) std::cout << "\u203E"; //"\u2014"; // em dash
+
+						// show contents of RR action queues
+						for(unsigned short r = 0; r < rr_count; r++){
+
+							/*if(r != 0 && r % 8 == 0)
+								std::cout << "\n";*/
+							std::cout << "\nRR[" << r << "]: ";
+
+							std::queue<std::pair<unsigned, unsigned>> temp_queue(rr_action_queue[r]);
+
+							for(unsigned i = 0; i < rr_action_queue[r].size(); i++){
+
+								unsigned trace_id = temp_queue.front().first;
+								std::tuple<unsigned, unsigned, unsigned> trace = parseTrace( trace_file[trace_id] );
+
+								std::cout << "T" << trace_id << "[" << std::get<0>(trace) << "]  ";
+								temp_queue.pop();
+							}
+
+						}
+
+						// show contents of memory action queues
+						for(unsigned i = 1; i <= last_level; i++){
+
+							if(i == last_level) std::cout << "\nMain Memory:";
+							else std::cout << "\nL" << (level + 1) << ":";
+
+							// print queue if it has content
+							if(cache_action_queue[i - 1].size() > 0){
+
+								std::queue< std::pair<unsigned, memAction> > temp_queue(cache_action_queue[i - 1]);
+
+								for(unsigned j = 0; j < cache_action_queue[i - 1].size(); j++){
+
+									unsigned next_trace_id = temp_queue.front().first;
+									std::tuple<unsigned, unsigned, unsigned> next_trace = parseTrace( trace_file[next_trace_id] );
+
+									std::cout << "  " << std::get<0>(next_trace);
+									if(j == 0 && transfer_waiting[i - 1].first)
+										std::cout << "...";
+
+									temp_queue.pop();
+								}
+
+							}else{
+								std::cout << "<EMPTY SET>";
 							}
 						}
 
-					// or busy reading
-					}else{
-
-						// read cycle
-						if(--latency_counters[whos_busy] > 0)
-							std::cout << busy_slug << " is busy READING [" << latency_counters[whos_busy] << " more cc]; must WAIT\n";
-
-						else{
-							std::cout << busy_slug << " is done READING\n";
-								// cache hit is achieved
-
-							if(whos_busy != 1) memory_hierarchy_[1]->attemptModule(next_addr);
-								// update lowest level of cache if not in lowest cache
-							memory_hierarchy_[whos_busy]->toggleReadLock();
-
-							whos_busy = 1;
-							addr_resolved = true;
-							traces_processed++;
-						}
+						std::cout << "\n\n\u2014\u2014 ACTIONS \u2014\u2014\n"; // __ __
+						for(unsigned short a = 0; a < 13; a++) std::cout << "\u203E"; //"\u2014"; // em dash
+						std::cout << std::endl;
 					}
 
-				}
 
 
 
 
 
-				// DEBUG: MULTI COLUMNLAR - solid module index check; test for Li's contents
-				if(ccc == stop_ccc || traces_processed == (trace_file.size() - 1)){ // only test up to "stop_ccc" traces or the end of trace
+
+					// ACTIONS for RRs
+					if(level == 0){
+
+						for(unsigned r = 0; r < rr_count; r++){
+
+							// only do something if there is a task for RR[r]
+							if(rr_action[r].second != VACANT && rr_action[r].second != IDLE){
+
+								unsigned next_trace_id = rr_action[r].first;
+								std::tuple<unsigned, unsigned, unsigned> next_trace = parseTrace( trace_file[next_trace_id] );
+
+								// if this is a new action, display top of latency count
+								if(rr_last_trace[r].first != rr_action[r].first ||
+										rr_last_trace[r].second != rr_action[r].second){
+
+									////
+									std::cout << "RR[" << r << " = " << (rr_action[r].first % rr_count) << "] - ";
+
+									unsigned short next_latency;
+									switch(rr_action[r].second){
+
+										// attempting to receive a recently found module
+										case TRANSFER:
+											next_latency = rr_latency_counters[r];
+
+											////
+											std::cout << "begin TRANSFER";
+											break;
+
+										// perform task with resident module
+										case EXECUTE:
+											next_latency = std::get<2>(next_trace);
+
+											////
+											std::cout << "begin EXECUTION";
+									}
+
+									////
+									std::cout << " of module# " << std::get<0>(next_trace) << " (duration is "
+											  << next_latency << " CCs)\n";
+
+									rr_last_trace[r] = std::make_pair(rr_action[r].first, rr_action[r].second);
+								}
+
+								////
+								if(rr_latency_counters[r] - 1 != 0)
+									std::cout << "RR[" << r << " = " << (rr_action[r].first % rr_count) << "] - ";
+
+								// what is RR[r]'s current action
+								switch(rr_action[r].second){
+
+									case TRANSFER:
+										rr_latency_counters[r]--;
+
+										if(rr_latency_counters[r] != 0)
+											std::cout << "TRANSFERING";
+										break;
+
+									case EXECUTE:
+										rr_latency_counters[r]--;
+
+										if(rr_latency_counters[r] != 0)
+											std::cout << "EXECUTING";
+								}
+
+								////
+								if(rr_latency_counters[r] != 0)
+									std::cout << " module# " << std::get<0>(next_trace) << " ("
+											  << rr_latency_counters[r] << " CCs remaining)\n";
+
+								// when latency has been fully consumed, ready the next action for next cc
+								if(rr_latency_counters[r] == 0){
+
+									////
+									std::cout << "RR[" << r << " = " << (rr_action[r].first % rr_count) << "] - has finished ";
+
+									switch(rr_action[r].second){
+
+										case TRANSFER:
+											std::cout << "TRANSFERING";
+
+											rr_latency_counters[r] = std::get<2>(parseTrace( trace_file[rr_action[r].first] ));
+											rr_action[r].second = EXECUTE;
+											break;
+
+										case EXECUTE:
+											std::cout << "EXECUTING";
+
+											// if there is something in the action queue
+											if(rr_action_queue[r].size() > 0){
+
+												unsigned trace_id = rr_action_queue[r].front().first;
+												unsigned target_level = rr_action_queue[r].front().second;
+
+												rr_action[r] = std::make_pair(trace_id, TRANSFER);
+
+												// trying to run a task that was in RR - may not be present anymore
+												if(target_level == 0){
+
+													//// todo: what to do?
+
+												}else{
+
+													//std::cout << "Picking up trace# " << trace_id << " from ";
+													//if(target_level == last_level) std::cout << "the Main Memory.";
+													//else std::cout << "L" << target_level << ".";
+
+													rr_latency_counters[r] = memory_hierarchy_[level]->getReadLatency(); //std::get<2>(parseTrace( trace_file[trace_id] ));
+
+													//transfer_waiting[target_level - 1].first = false;
+													after_wait_lock[target_level - 1] = true;
+
+													cache_action_queue[target_level - 1].pop();
+												}
+
+												rr_action_queue[r].pop();
+
+											// if not, relax
+											}else{
+												rr_action[r].second = IDLE;
+											}
+
+									}
+
+									////
+									std::cout << " module# " << std::get<0>(next_trace) << "\n";
+
+								} // /handle spent latency
+
+							} // handle available task
+
+
+						}
+
+
+
+
+
+
+
+					// ACTIONS for cache levels and main memory
+					}else{ // if(!after_wait_lock[level - 1]){ // if(!transfer_waiting[level].first){
+
+						// only do something if there is a task for this memory level
+						if(!cache_action_queue[level - 1].empty() && !transfer_waiting[level - 1].first){
+
+							////
+							unsigned next_trace_id = cache_action_queue[level - 1].front().first;
+							std::tuple<unsigned, unsigned, unsigned> next_trace = parseTrace( trace_file[next_trace_id] );
+
+							// if this is a new action, update latency
+							if(cache_last_trace[level - 1].first != cache_action_queue[level - 1].front().first ||
+									cache_last_trace[level - 1].second != cache_action_queue[level - 1].front().second){
+
+								////
+								if(level == last_level) std::cout << "Main Memory - begins ";
+								else std::cout << "L" << level << " - begins ";
+
+								unsigned short next_latency;
+								switch(cache_action_queue[level - 1].front().second){
+
+									case SEARCH:
+										next_latency = memory_hierarchy_[level]->getSearchLatency();
+
+										////
+										std::cout << "SEARCH for";
+										//break;
+
+									/*case TRANSFER:
+										next_latency = memory_hierarchy_[level]->getReadLatency();
+
+										////
+										std::cout << "TRANSFER of";*/
+								}
+
+								////
+								std::cout << " module# " << std::get<0>(next_trace) << " (duration is "
+										  << next_latency << " CCs)\n";
+
+								// latency is the duration of the next module
+								cache_latency_counters[level - 1] = next_latency;
+
+								cache_last_trace[level - 1] = cache_action_queue[level - 1].front();
+							}
+
+							////
+							if(cache_latency_counters[level - 1] - 1 != 0)
+								if(level == last_level) std::cout << "Main Memory - ";
+								else std::cout << "L" << level << " - ";
+
+
+							// when waiting, no actions are taken
+							if(!transfer_waiting[level - 1].first && !after_wait_lock[level - 1]){
+
+								// what is this cache level's current action
+								switch( cache_action_queue[level - 1].front().second ){
+
+									// this cache level is performing a search for a module's presence
+									case SEARCH:
+										cache_latency_counters[level - 1]--;
+
+										////
+										if(cache_latency_counters[level - 1] != 0)
+											std::cout << "SEARCHING for";
+										//break;
+								}
+
+								////
+								if(cache_latency_counters[level - 1] != 0)
+									std::cout << " module# " << std::get<0>(next_trace) << " ("
+											  << cache_latency_counters[level - 1] << " CCs remaining)\n";
+
+
+								// handle fully consumed latency
+								if(cache_latency_counters[level - 1] == 0){
+
+									////
+									if(level == last_level) std::cout << "Main Memory - ";
+									else std::cout << "L" << level << " - ";
+
+									////
+									switch( cache_action_queue[level - 1].front().second ){
+
+										// finished performing a search
+										case SEARCH:
+
+											////
+											std::cout << "finished SEARCHING for module# " << std::get<0>(next_trace);
+
+											// if module present, attempt to transfer to RRs
+											if(memory_hierarchy_[level]->isModulePresent( std::get<0>(next_trace) )){
+
+												////
+												std::cout << " and it was FOUND - ";
+
+												unsigned target_rr = std::get<0>(next_trace) % rr_count;
+
+												if(rr_action[target_rr].second == VACANT || rr_action[target_rr].second == IDLE){
+
+													rr_action[target_rr].first = next_trace_id;
+													rr_action[target_rr].second = TRANSFER;
+
+													rr_latency_counters[target_rr] = memory_hierarchy_[level]->getReadLatency();
+													cache_action_queue[level - 1].pop();
+
+													////
+													std::cout << " RR[" << target_rr << "] is not busy and can accept TRANSFER\n";
+
+												}else{
+
+													////
+													std::cout << " RR[" << target_rr << "] is busy and TRANSFER must wait\n";
+
+													transfer_waiting[level - 1] = std::make_pair(true, next_trace_id);
+													//rr_action_queue[target_rr].push(std::make_pair(next_trace_id, memory_hierarchy_[level]->getReadLatency()));
+													rr_action_queue[target_rr].push(std::make_pair(next_trace_id, level));
+												}
+
+											// if not present, move search to next level
+											}else{
+
+												cache_action_queue[level].push( std::make_pair(cache_action_queue[level - 1].front().first, SEARCH) );
+												cache_action_queue[level - 1].pop();
+
+												////
+												std::cout << " but it was NOT FOUND - increase search depth (to ";
+												if(level + 1 == last_level) std::cout << "Main Memory)\n";
+												else std::cout << "L" << (level + 1) << ")\n";
+											}
+
+											//break;
+
+										// finished performing a transfer
+										/*case TRANSFER:
+
+											unsigned target_rr = std::get<0>(next_trace) % rr_action_queue.size();
+											rr_action_queue[target_rr].push( std::make_pair(cache_action_queue[level - 1].front().first, EXECUTE) );
+											cache_action_queue[level - 1].pop();
+
+											////
+											std::cout << "finished TRANSFERING to RR[" << target_rr << "] module# " << std::get<0>(next_trace) << "\n";
+											break;*/
+									}
+
+								} // /handle spent latency
+
+
+							// waiting and after wait lock has not been toggled yet
+							}/*else if(!after_wait_lock[level - 1]){
+								unsigned target_rr = std::get<0>(next_trace) % rr_count;
+
+								std::cout << "waiting to begin TRANSFERING module# " << std::get<0>(next_trace)
+										  << " to RR[" << target_rr << "]...";
+
+							// handle after wait lock
+							}else{
+
+								unsigned target_rr = std::get<0>(next_trace) % rr_count;
+
+								std::cout << "done waiting to begin TRANSFERING module# " << std::get<0>(next_trace)
+										  << " to RR[" << target_rr << "].  TRANSFER will begin in next clock cycle.";
+
+								transfer_waiting[level - 1].first = false;
+								after_wait_lock[level - 1] = false;
+							}*/
+
+
+						} // /handle next task
+
+						else if(!after_wait_lock[level - 1]){
+							unsigned next_trace_id = cache_action_queue[level - 1].front().first;
+							std::tuple<unsigned, unsigned, unsigned> next_trace = parseTrace( trace_file[next_trace_id] );
+							unsigned target_rr = std::get<0>(next_trace) % rr_count;
+
+							if(level == last_level) std::cout << "Main Memory - ";
+							else std::cout << "L" << level << " - ";
+
+							std::cout << "waiting to begin TRANSFERING module# " << std::get<0>(next_trace)
+									  << " to RR[" << target_rr << "]...";
+
+						// handle after wait lock
+						}else{
+							unsigned next_trace_id = cache_action_queue[level - 1].front().first;
+							std::tuple<unsigned, unsigned, unsigned> next_trace = parseTrace( trace_file[next_trace_id] );
+							unsigned target_rr = std::get<0>(next_trace) % rr_count;
+
+							if(level == last_level) std::cout << "Main Memory - ";
+							else std::cout << "L" << level << " - ";
+
+							std::cout << "done waiting to begin TRANSFERING module# " << std::get<0>(next_trace)
+									  << " to RR[" << target_rr << "].  TRANSFER will begin in next clock cycle.";
+
+							transfer_waiting[level - 1].first = false;
+							after_wait_lock[level - 1] = false;
+
+							rr_latency_counters[target_rr] = memory_hierarchy_[level]->getReadLatency();
+						}
+
+
+
+
+
+					} // /ACTIONS
+
+					// prevents search overlap after a wait is completed
+					if(after_wait_lock[level - 1])
+						after_wait_lock[level - 1] = false;
+
+				} // /cc actions loop
+
+
+
+
+
+
+
+
+				// LEGACY DEBUG: MULTI COLUMNLAR - solid module index check; test for Li's contents
+				if(ccc == stop_ccc || trace_pointer == (trace_file.size() - 1)){ // only test up to "stop_ccc" traces or the end of trace
 					std::cout << "\n\n";
 
-					for(int i = 0; i < memory_hierarchy_[0]->getSize(); i++){
+					/*for(int i = -1; i < memory_hierarchy_[last_level]->getSize(); i++){
 
-						if(i == 0){
-							for(unsigned short j = memory_hierarchy_.size() - 1; 0 < j; j--){
-								std::cout << "\t>>> Contents of L" << j << " <<<";
+						for(int j = 0; j < last_level; j++){
 
-								if(j != 1) std::cout << "\t\t\t";
+							// print headers
+							if(i == -1){
+								std::cout << "  >>> Contents of ";
+
+								if(j == 0)
+									std::cout << "RRs";
+								else if(j == last_level)
+									std::cout << "Main";
+								else
+									std::cout << "L" << j;
+
+								if(j != last_level - 1) std::cout << " <<<\t\t";
+								else std::cout << " <<<\n";
+
+							// print modules
+							}else{
+								std::cout << "\tmodule " << i << " is ";
+
+								if(memory_hierarchy_[j]->isModulePresent( i ))
+									std::cout << "PRESENT @ ";
+								else
+									std::cout << "not present @ ";
+
+								if(j == 0)
+									std::cout << "RRs";
+								else if(j == last_level)
+									std::cout << "Main";
+								else
+									std::cout << "L" << j;
+
+								if(j != last_level - 1) std::cout << "\t";
+								else std::cout << "\n";
 							}
+						} // /col loop
 
-							std::cout << "\n";
-						}
-
-						for(unsigned short j = memory_hierarchy_.size() - 1; 0 < j; j--){
-
-							if(memory_hierarchy_[j]->isModulePresent( i ))
-								std::cout << "module " << i << " is PRESENT @ L" << j;
-							else
-								std::cout << "module " << i << " is not present @ L" << j;
-
-							if(j == 1) std::cout << "\n";
-							else  std::cout << "\t\t\t";
-						}
-
-					}
+					} // /row loop*/
 
 					break;
 				}
 
 
-				// DEBUG: SINGLE COLUNAR - solid module index check; test for Li's contents
-				/*if(ccc == stop_ccc || traces_processed == (trace_file.size() - 1)){ // only test up to "stop_ccc" traces or the end of trace
+
+				// LEGACY DEBUG: SINGLE COLUNAR - solid module index check; test for Li's contents
+				/*if(ccc == stop_ccc || trace_pointer == (trace_file.size() - 1)){ // only test up to "stop_ccc" traces or the end of trace
 					std::cout << "\n";
 
 					for(unsigned short i = memory_hierarchy_.size() - 1; 0 < i; i--){
@@ -237,14 +761,15 @@
 				}*/
 
 				// safety stop
-				//if(ccc == 101) break;
+				if(ccc == 101) break;
 
+				std::cout << "\n\n\n";
 
 				if(ccc == max_ccc){
 					std::cout << "Warning: Reached Drachma's present operational limits. Simulation ceased.";
-					//break;
+					break;
 				}
-			}
+			} // end main loop
 		}
 
 
@@ -253,6 +778,26 @@
 		//storageUnit& device::associativityToRegion(unsigned module_index);
 
 		//storageUnit& device::findInCache(unsigned module_index);
+
+		std::tuple<unsigned, unsigned, unsigned> device::parseTrace(std::string trace){
+
+			unsigned mod_id, request_time, duration;
+
+			std::string line = trace;
+			std::size_t comma = line.find(",");
+
+			mod_id = std::stol( line.substr(0, comma) );
+
+			line = line.substr(comma + 2);
+			comma = line.find(",");
+
+			request_time = std::stol( line.substr(0, comma) );
+
+			line = line.substr(comma + 2);
+			duration = std::stol( line );
+
+			return std::make_tuple(mod_id, request_time, duration);
+		}
 
 		//std::vector<storageUnit> pr_regions_;
 

@@ -17,12 +17,13 @@ name: Toy Miniature Memory Configuration
 		name: "name of the memory configuration"*
 
 		main name: "main memory name"
-		
-		main size: "main memory size (in module count)"
-		
+		main size: "main memory size (in module count)"*
+
 		l1 name: "lowest cache level name"
 		l1 size: "lowest cache level size (in module count)"
 			level's supported up to l9
+
+		rcr count: "total number of reconfigurable regions"*
 #/
 
 main name: Compact Flash
@@ -30,7 +31,4 @@ main size: 16
 main read latency: 8
 main search latency: 32
 
-l1 name: PR Regions
-l1 size: 8
-l1 read latency: 2
-l1 search latency: 8
+rcr count: 8

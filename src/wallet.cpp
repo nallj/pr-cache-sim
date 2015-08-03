@@ -113,7 +113,8 @@
 	std::vector<std::string> wallet::getTraceFile(unsigned trace_id){
 
 		std::vector<std::string> trace_params {"name"};
-		std::vector<std::string> regex_filter {"\\d+"};
+		//std::vector<std::string> regex_filter {"\\d+"}; // legacy trace file pattern
+		std::vector<std::string> regex_filter {"(\\d+)(,\\s*\\d+){2}"}; // new regex pattern
 
 		fileHandler trace_reader = fileHandler(trace_files_[trace_id], trace_params, regex_filter);
 
@@ -125,7 +126,8 @@
 
 	storageUnit wallet::buildMemoryHierarchy(std::string memory_file){
 
-		std::vector<std::string> memory_params {"name", "main name", "main size", "main read latency", "main search latency"};
+		std::vector<std::string> memory_params {"name", "main name", "main size", "main read latency",
+		    	    							"main search latency", "rcr count"};
 		std::vector<std::string> regex_filter {"[l][1-9] \\bname\\b[:] [\\w ]+",
 												"[l][1-9] \\bsize\\b[:] [\\w ]+",
 												"[l][1-9] \\b(read|search)\\b \\blatency\\b[:] [\\w ]+"};
@@ -135,9 +137,9 @@
 
 		if(memory_reader.isFileValid()){
 
-			// start by retrieving the information needed to form the main menu
+			// start by retrieving the information needed to form the main menu and rc regions
 			std::multimap<std::string, std::string> memory_contents = memory_reader.getParams();
-			std::string mem_name, main_mem_name, main_mem_size, main_mem_read, main_mem_search;
+			std::string mem_name, main_mem_name, main_mem_size, main_mem_read, main_mem_search, rcr_count;
 
 			for(std::multimap<std::string,std::string>::iterator it = memory_contents.begin(); it != memory_contents.end(); ++it){
 
@@ -157,23 +159,31 @@
 
 				else if(next[0] == "main search latency") // read in main memory search latency (in CCs)
 					main_mem_search = next[1];
+
+				else if(next[0] == "rcr count") // read in amount of reconfigurable regions
+					rcr_count = next[1];
 			}
 
-			storageUnit main_memory = storageUnit(std::stoi(main_mem_size), NULL, std::stoi(main_mem_read), std::stoi(main_mem_search));
+			// initialize the highest memory level, the rc regions
+			storageUnit rcr = storageUnit(std::stol(rcr_count));
+			rcr.name_ = mem_name;
+			rcr.file_ = memory_file;
+
+			// initialize the lowest level, the main memory
+			storageUnit* main_memory = new storageUnit(std::stol(main_mem_size), NULL, std::stol(main_mem_read), std::stol(main_mem_search));
 			//storageUnit main_memory = storageUnit(mem_name, memory_file, std::stoi(main_mem_size), NULL, std::stoi(main_mem_read), std::stoi(main_mem_search));
-			if(mem_name != "") main_memory.name_ = main_mem_name;
-			main_memory.file_ = memory_file;
+			main_memory->name_ = main_mem_name;
+			//main_memory->file_ = memory_file;
 
 			// initialize main memory's modules
-			for(unsigned i = 0; i < std::stoi(main_mem_size); i++)
-				main_memory.insertModule( new module(i, 777) );
+			for(unsigned i = 0; i < std::stol(main_mem_size); i++)
+				main_memory->insertModule( new module(i, 777) );
 					// todo: bitstream width is arbitrary since it is not yet considered in Drachma
 
-
-			// create levels (up to L9) of cache based on data parameters
+			// create interstitial levels (up to L9) of cache based on data parameters
 			std::vector<std::string> level_params = memory_reader.getData();
 			std::string level_name[10];
-			int level_size[10], level_read[10], level_search[10], highest_level = 0;
+			int level_size[10], level_read[10], level_search[10], lowest_level = 0;
 
 			for(int i = 0; i < level_params.size(); i++){
 
@@ -181,46 +191,60 @@
 				std::string param = level_params[i].substr(3, level_params[i].find(":") - 3); // grab rest of param
 				std::string arg = level_params[i].substr(level_params[i].find(":") + 2); // grab param value
 
-				if(highest_level < which_level) // keep track of the lowest level declared
-					highest_level = which_level;
+				if(lowest_level < which_level) // keep track of the lowest level declared
+					lowest_level = which_level;
 
 				if(param == "name") // read in level's name
 					level_name[which_level] = arg + " [L" + std::to_string(which_level) + "]";
 
 				else if(param == "size") // read in level's size
-					level_size[which_level] = std::stoi(arg);
+					level_size[which_level] = std::stol(arg);
 
 				else if(param == "read latency") // read in level's read latency (in CCs)
-					level_read[which_level] = std::stoi(arg);
+					level_read[which_level] = std::stol(arg);
 
 				else if(param == "search latency") // read in level's search latency (in CCs)
-					level_search[which_level] = std::stoi(arg);
+					level_search[which_level] = std::stol(arg);
+
+				// todo: perform check for incomplete cache level parameters
 			}
 
+			//storageUnit* parent = &main_memory;
+			storageUnit* parent = &rcr;
 
-			// if cache levels have been declared, link them all together from the lowest level to the main memory
-			if(highest_level > 0){
+			// if cache levels have been declared, link them all together from the highest level
+			if(lowest_level > 0){
 
-				storageUnit* parent = &main_memory;
+				//storageUnit* parent = &main_memory;
 
-				for(int i = highest_level; i > 0; i--){
+				//for(int i = lowest_level; i > 0; i--){
+				for(int i = 1; i <= lowest_level; i++){
 
 					// use only random replacement
 					//replAlg* default_alg = new randomAlg("Random Replacement", level_size[i]);
-					// use only random replacement
+					// use only fifo replacement
 					replAlg* default_alg = new fifoAlg("FIFO Replacement", level_size[i]);
 
 					storageUnit* child = new storageUnit(level_size[i], default_alg, level_read[i], level_search[i]);
 
 					child->name_ = level_name[i];
-					if(i != highest_level) child->setParent(parent); // dont make main memory the parent of Ln
+					//if(i != lowest_level) child->setParent(parent); // dont make main memory the parent of Ln
 
 					parent->setChild(child);
 					parent = child;
 				}
+
+				//rcr->setParent(parent);
 			}
 
-			return main_memory;
+			// lastly link the rc regions
+			//parent->setChild(rcr);
+
+			// lastly link the main memory
+			parent->setChild(main_memory);
+
+			//return main_memory;
+			return rcr;
 
 		}else std::cout << "\n\nMEMORY FILE IS CORRUPT!!!\n\n";
 	}

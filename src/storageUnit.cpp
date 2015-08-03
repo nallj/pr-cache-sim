@@ -5,10 +5,13 @@
 
 
 /* PUBLIC */
+	storageUnit::storageUnit(unsigned short rc_reg_count) :
+		unit_size_(rc_reg_count), replacement_alg_(NULL), read_latency_(0), search_latency_(0),
+		child_unit_(NULL){ } // , parent_unit_(NULL), name_("Reconfigurable Regions")
 
 	storageUnit::storageUnit(unsigned short unit_size, replAlg* repl_alg, unsigned short int read_latency, unsigned short int search_latency) :
 		unit_size_(unit_size), replacement_alg_(repl_alg), read_latency_(read_latency),
-		search_latency_(search_latency), child_unit_(NULL), parent_unit_(NULL){
+		search_latency_(search_latency), child_unit_(NULL){ // , parent_unit_(NULL)
 
 		//for(unsigned i = 0; i < unit_size; i++)
 		//	module_table_.push_back(new module(i, i*3));
@@ -17,9 +20,12 @@
 
 	void storageUnit::printDetails(){
 
-		std::cout << "\t\t\t'" << name_ << "'\n"
-				  << "\t\t\t\tParameters: size(" << unit_size_ << "), read latency(" << read_latency_
-				  << "), search latency(" << search_latency_ << ")\n";
+		if(replacement_alg_ == NULL && read_latency_ == 0 && search_latency_ == 0)
+			std::cout << "\t\t\t'Reconfigurable Regions'\n\t\t\t\tParameter: size(" << unit_size_ << ")\n";
+		else
+			std::cout << "\t\t\t'" << name_ << "'\n"
+				  	  << "\t\t\t\tParameters: size(" << unit_size_ << "), read latency(" << read_latency_
+					  << "), search latency(" << search_latency_ << ")\n";
 
 		if(replacement_alg_) replacement_alg_->printName();
 	}
@@ -44,11 +50,12 @@
 			insertModule( new module(module_index, 777) );
 			//updateAlg(true, module_index);
 
-			storageUnit* parent = getParent();
+			// todo: is parent pointer necessary?
+			/*storageUnit* parent = getParent();
 			// send victim to next cache level to be evaluated for insertion
 			if(parent && !parent->isModulePresent(victim_module))
 				getParent()->attemptModule(victim_module);
-				// if an eviction occurs, need to attemptModule on next cache level
+				// if an eviction occurs, need to attemptModule on next cache level*/
 		}
 
 	}
@@ -77,7 +84,7 @@
 		return module_table_[module_index];
 	}
 
-	storageUnit* storageUnit::getParent(){ return parent_unit_; }
+	//storageUnit* storageUnit::getParent(){ return parent_unit_; }
 
 	storageUnit* storageUnit::getChild(){ return child_unit_; }
 
@@ -87,7 +94,7 @@
 
 	bool storageUnit::availableToRead(){ return !read_lock_; }
 
-	void storageUnit::setParent(storageUnit* parent_level){ parent_unit_ = parent_level; }
+	//void storageUnit::setParent(storageUnit* parent_level){ parent_unit_ = parent_level; }
 
 	void storageUnit::setChild(storageUnit* child_level){ child_unit_ = child_level; }
 

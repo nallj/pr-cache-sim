@@ -12,6 +12,8 @@
 class storageUnit{
 
 	public:
+		storageUnit(unsigned short rc_reg_count);
+
 		storageUnit(unsigned short unit_size, replAlg* repl_alg, unsigned short int read_latency, unsigned short int search_latency);
 
 		storageUnit(std::string name, std::string file_name, unsigned short unit_size, replAlg* repl_alg, unsigned short int read_latency, unsigned short int search_latency);
@@ -27,7 +29,7 @@ class storageUnit{
 		void insertModule(module* new_module);
 
 
-		// Getters //
+		// Accessors //
 		unsigned short getSize();
 
 		std::vector<module*>& getModuleTable();
@@ -71,7 +73,7 @@ class storageUnit{
 
 		replAlg* replacement_alg_;
 
-		storageUnit* parent_unit_;
+		//storageUnit* parent_unit_;
 		storageUnit* child_unit_;
 
 		unsigned short int read_latency_;

@@ -6,7 +6,7 @@
 
 /* PUBLIC */
 	module::module(unsigned id, unsigned bitstream_width) :
-			module_id_(id), bitstream_width_(bitstream_width){}
+			module_id_(id), bitstream_width_(bitstream_width){} //, executing_(false){}
 
 
 	unsigned module::getId(){
@@ -21,11 +21,12 @@
 		return bitstream_width_;
 	}
 
+	/*void module::toggleExe(){
+		executing_ = !executing_;
+	}
 
-/* PRIVATE */
-	unsigned module_id_;
-
-	unsigned bitstream_width_;
-
+	bool module::isRunning(){
+		return executing_;
+	}*/
 
 #endif

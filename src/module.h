@@ -15,10 +15,16 @@ class module{
 
 		unsigned getSize();
 
+		//void toggleExe();
+
+		//bool isRunning();
+
 	private:
 		unsigned module_id_;
 
 		unsigned bitstream_width_;
+
+		//bool executing_;
 };
 
 #endif

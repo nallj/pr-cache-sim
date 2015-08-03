@@ -46,10 +46,10 @@ void traceHelp(){
 }
 
 void startHelp(){
-	// origin:	drachma -s DEVICE_NAME CONFIGURATION_NAME APPLICATION_NAME
+	// origin:	drachma -s DEVICE_ID MEMORY_ID TRACE_ID [STOP_AT_CC]
 
 	std::cout << "start Simulation" << std::endl
-			  << "usage:" << std::endl << "\t./drachma -s DEVICE_ID MEMORY_ID TRACE_ID STOP_AT_CC"
+			  << "usage:" << std::endl << "\t./drachma -s DEVICE_ID MEMORY_ID TRACE_ID [STOP_AT_CC]"
 			  << std::endl << std::endl;
 }
 
@@ -76,7 +76,12 @@ void displayHelp(){
 
 int main(int argc, char** argv){
 
-	std::cout << std::endl << "Drachma : Reconfigurable Computing Cache Simulator\n\n\n";
+	// clear screen
+	std::cout << "\033[2J\033[1;1H";
+
+	//std::cout << std::endl;
+
+	std::cout <<  "Drachma : Reconfigurable Computing Cache Simulator\n\n\n";
 
 	// instantiate drachma wallet
 	wallet library = wallet();
@@ -182,7 +187,8 @@ int main(int argc, char** argv){
 
     	    				if(fileExists(argv[2])){
 
-    	    					std::vector<std::string> memory_params {"name", "main name", "main size", "main read latency", "main search latency"};
+    	    					std::vector<std::string> memory_params {"name", "main name", "main size", "main read latency",
+    	    															"main search latency", "rcr count"};
     	    					std::vector<std::string> regex_filter {"[l][1-9] \\bname\\b[:] [\\w ]+",
     	    															"[l][1-9] \\bsize\\b[:] [\\w ]+",
 																		"[l][1-9] \\b(read|search)\\b \\blatency\\b[:] [\\w ]+"};
@@ -268,7 +274,8 @@ int main(int argc, char** argv){
 							if(fileExists(argv[2])){
 
 								std::vector<std::string> trace_params {"name"};
-    							std::vector<std::string> regex_filter {"\\d+"};
+    							//std::vector<std::string> regex_filter {"\\d+"}; // legacy trace file pattern
+    							std::vector<std::string> regex_filter {"(\\d+)(,\\s*\\d+){2}"}; // new regex pattern
 
     							fileHandler trace_reader = fileHandler(argv[2], trace_params, regex_filter);
 

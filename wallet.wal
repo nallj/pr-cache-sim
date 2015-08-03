@@ -12,7 +12,7 @@ d: device.dev
 # m: memory.mem
 # t: traces.trc
 
-# m: realistc.mem
+# m: realistic.mem
 
 m: moderate.mem
 t: moderate.trc
@@ -20,4 +20,6 @@ t: moderate.trc
 m: simple.mem
 m: toy.mem
 t: toy.trc
+
+m: micron.mem
 

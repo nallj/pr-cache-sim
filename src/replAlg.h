@@ -19,12 +19,12 @@ class replAlg{
 		virtual void newEntryUpdate(unsigned module_index) = 0;
 
 		virtual unsigned replace(unsigned module_index) = 0;
-			// replace next eviction with module_index, return table index of victim
+			// replace next eviction with module_index, return table index of victim (NOT the module index)
 
 		std::string name_;
 
 		// DEBUG FUNCTIONS //
-			virtual void printName(){ std::cout << "\t\t\t\tReplacement:  '" << name_ << "'.\n"; }
+			virtual void printName(){ std::cout << "\t\t\t\tReplacement: '" << name_ << "'\n"; }
 
 			virtual void printTable(){
 
@@ -40,7 +40,7 @@ class replAlg{
 			name_(name), max_table_size_(max_size){ }
 
 
-		virtual unsigned evictNext() = 0; // find location of next entry in table to evict (NOT the module index)
+		virtual unsigned evictNext() = 0; // find location of next table entry to evict (NOT the module index)
 
 		virtual void reorderTable() = 0;
 

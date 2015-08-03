@@ -16,7 +16,6 @@
 		tag_table_.push_back( std::make_pair(-1, module_index) );
 
 		replAlg::printTable();
-
 	}
 
 	unsigned randomAlg::replace(unsigned module_index){

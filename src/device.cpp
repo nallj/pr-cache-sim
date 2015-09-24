@@ -159,7 +159,7 @@
 					  << (last_level + 1) << " <<\n\n\n";
 
 
-			// main simulation loop
+			// MAIN SIMULATION LOOP
 			for(; trace_pointer < trace_file.size(); ccc++){
 
 				// interpret incoming trace
@@ -216,8 +216,6 @@
 								std::cout << "can't EXECUTE because RR[" << target_rr << "] is still in use.";
 							}
 
-							trace_pointer++;
-
 						// module not present, look deeper into the hierarchy
 						}else{
 
@@ -228,9 +226,9 @@
 							if(level + 1 == last_level) std::cout << "Main Memory)";
 							else std::cout << "L" << (level + 1) << ")";
 
-							trace_pointer++;
 						}
 
+						trace_pointer++;
 					} // /init case
 
 
@@ -527,7 +525,7 @@
 
 
 							// when waiting, no actions are taken
-							if(!transfer_waiting[level - 1].first && !after_wait_lock[level - 1]){
+							if(!transfer_waiting[level - 1].first && !after_wait_lock[level - 1]){ // redundant conditional: "!transfer_waiting[level - 1].first"
 
 								// what is this cache level's current action
 								switch( cache_action_queue[level - 1].front().second ){

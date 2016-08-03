@@ -8,18 +8,15 @@
 
 name: My Drachma Wallet
 
-d: device.dev
+# d: device.dev # no intention of supporting anymore
 # m: memory.mem
+# a: application.app
 # t: traces.trc
 
-# m: realistic.mem
+m: realistic.mem
+m: simplified.mem
 
-m: moderate.mem
-t: moderate.trc
+a: random.app
 
-m: simple.mem
-m: toy.mem
-t: toy.trc
-
-m: micron.mem
-
+t: trace_sp2_rp5_0.trc
+t: trace_sp2_rp5_1.trc

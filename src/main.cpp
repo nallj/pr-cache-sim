@@ -10,6 +10,9 @@
 #include "device.h"
 #include "fileHandler.h"
 
+#include "storage/reconfigurableRegions.h"
+#include "storage/module.h"
+
 
 bool fileExists(const std::string& file){
 	return ( access(file.c_str(), F_OK) != -1 );
@@ -35,6 +38,16 @@ void memoryHelp(){
 			  << std::endl << std::endl;
 }
 
+void applicationHelp(){
+	// origin:	drachma -a APPLICATION_FILE [APPLICATION_NAME]
+
+	std::cout << "add Application to simulator wallet" << std::endl
+			  << "usage:" << std::endl << "\t./drachma -aa APPLICATION_FILE" << std::endl
+			  << "remove Application from simulator wallet" << std::endl
+			  << "usage:" << std::endl << "\t./drachma -ar APPLICATION_FILE"
+			  << std::endl << std::endl;
+}
+
 void traceHelp(){
 	// origin:	drachma -t TRACE_FILE [APPLICATION_NAME]
 
@@ -56,7 +69,7 @@ void startHelp(){
 void displayHelp(){
 	std::cout << "This is the help - kind of like a man page" << std::endl << std::endl;
 
-	deviceHelp();
+	//deviceHelp();
 
 	std::cout << "Help user - print usage synopsis" << std::endl
 			  << "usage:" << std::endl << "\t./drachma -h"
@@ -64,13 +77,15 @@ void displayHelp(){
 
 	memoryHelp();
 
-	startHelp();
+	applicationHelp();
 
 	traceHelp();
 
 	std::cout << "list objects contained in the simulator Wallet" << std::endl
 			  << "usage:" << std::endl << "\t./drachma -w"
 			  << std::endl << std::endl;
+
+	startHelp();
 }
 
 
@@ -79,9 +94,7 @@ int main(int argc, char** argv){
 	// clear screen
 	std::cout << "\033[2J\033[1;1H";
 
-	//std::cout << std::endl;
-
-	std::cout <<  "Drachma : Reconfigurable Computing Cache Simulator\n\n\n";
+	std::cout <<  "Drachma : Partial Reconfiguration Cache Simulator\n\n\n";
 
 	// instantiate drachma wallet
 	wallet library = wallet();
@@ -102,7 +115,7 @@ int main(int argc, char** argv){
 
     		switch(switch_choices[i]){
 
-    			case 'd': {
+    			//case 'd': {
     				/*
     				 * add device to simulator wallet
     				 *
@@ -115,7 +128,7 @@ int main(int argc, char** argv){
     				 * 		./drachma -dr DEVICE_FILE [DEVICE_NAME]
     				 */
 
-    				if(switch_count == 2){ // require two switches
+    				/*if(switch_count == 2){ // require two switches
 
     					if(switch_choices[1] == 'a'){
     						std::cout << "Adding new device '" << argv[2] << "' to the Wallet.\n\n";
@@ -148,12 +161,12 @@ int main(int argc, char** argv){
     				}
 
     				if(!valid_use){
-    					std::cout << "ERROR: Improper switch use; The operations concerning Devices are as followed:\n";
+    					std::cout << "ERROR: Improper switch use; The operations concerning Devices are as follows:\n";
     					deviceHelp();
     				}
 
     				goto exit;
-    			}
+    			}*/
 
     			case 'h': { // help user
     				/*
@@ -187,17 +200,12 @@ int main(int argc, char** argv){
 
     	    				if(fileExists(argv[2])){
 
-    	    					std::vector<std::string> memory_params {"name", "main name", "main size", "main read latency",
-    	    															"main search latency", "rcr count"};
-    	    					std::vector<std::string> regex_filter {"[l][1-9] \\bname\\b[:] [\\w ]+",
-    	    															"[l][1-9] \\bsize\\b[:] [\\w ]+",
-																		"[l][1-9] \\b(read|search)\\b \\blatency\\b[:] [\\w ]+"};
-
-    	    					fileHandler memory_reader = fileHandler(argv[2], memory_params, regex_filter);
+    	    					fileHandler memory_reader = fileHandler(argv[2],
+    	    							library.getMemoryParamRules(), library.getMemoryRegexRules());
 
     							if(memory_reader.isFileValid()){
-
     								library.addMemory(argv[2]);
+
     								std::cout << "Done!\n";
     							}else
     								std::cout << "ERROR: The target file '" << argv[2] << "' is not a valid Memory Configuration file.\n\n";
@@ -216,40 +224,63 @@ int main(int argc, char** argv){
     				}
 
     				if(!valid_use){
-    					std::cout << "ERROR: Improper switch use; The operations concerning Memory Configurations are as followed:\n";
+    					std::cout << "ERROR: Improper switch use; The operations concerning Memory Configuration files are as follows:\n";
     					memoryHelp();
     				}
 
     				goto exit;
     			}
 
-    			case 's': {
+    			case 'a': {
     				/*
-    				 * start simulation
+    				 * add application to simulator wallet
     				 *
     				 * usage:
-    				 * 		./drachma -s DEVICE_NAME CONFIGURATION_NAME APPLICATION_NAME
+    				 * 		./drachma -aa APPLICATION_FILE [APPLICATION_NAME]
+    				 *
+    				 * remove application to simulator wallet
+    				 *
+    				 * usage:
+    				 * 		./drachma -ar APPLICATION_FILE [APPLICATION_NAME]
     				 */
 
-    				if(argc == 5 || argc == 6){
+    				if(switch_count == 2){ // require two switches
 
-    					device sim_device = library.getDevice( atoi(argv[2]) );
-    					storageUnit memory = library.getMemory( atoi(argv[3]) );
-    					std::vector<std::string> trace_file = library.getTraceFile( atoi(argv[4]) );
+						if(switch_choices[1] == 'a'){
+							std::cout << "Adding new application '" << argv[2] << "' to the Wallet.\n\n";
+							valid_use = true;
 
-    					sim_device.parseModules(memory); // apply memory to device
+							if(fileExists(argv[2])){
 
-    					if(argc == 5)
-    						sim_device.simulateApplication(trace_file); // apply traces to device (simulate)
-    					else
-    						sim_device.simulateApplication(trace_file, atoi(argv[5])); // apply traces to device until stopping trace is reached
+								fileHandler application_reader = fileHandler(argv[2],
+										library.getApplicationParamRules(), library.getApplicationRegexRules());
 
-    				}else{
-    					std::cout << "ERROR: Improper switch use; The operations concerning Starting the Simulator are as followed:\n";
-    					startHelp();
-    				}
+								if(application_reader.isFileValid()){
+									library.addApplication(argv[2]);
 
-    				goto exit;
+									std::cout << "Done!\n";
+								}else
+									std::cout << "ERROR: The target file '" << argv[2] << "' is not a valid Application file.\n\n";
+							}else
+								std::cout << "ERROR: The target file '" << argv[2] << "' does not exist.\n\n";
+
+						}else if(switch_choices[1] == 'r'){
+							std::cout << "Removing application '" << argv[2] << "' from the Wallet.\n\n";
+							valid_use = true;
+
+							if(!library.removeApplication(argv[2]))
+								std::cout << "ERROR: Could not remove Application '" << argv[2] << "' from the Wallet."
+										  << " <Application was Not Present>\n\n";
+
+						}
+					}
+
+					if(!valid_use){
+						std::cout << "ERROR: Improper switch use; The operations concerning Application files are as follows:\n";
+						deviceHelp();
+					}
+
+					goto exit;
     			}
 
     			case 't': {
@@ -273,14 +304,10 @@ int main(int argc, char** argv){
 
 							if(fileExists(argv[2])){
 
-								std::vector<std::string> trace_params {"name"};
-    							//std::vector<std::string> regex_filter {"\\d+"}; // legacy trace file pattern
-    							std::vector<std::string> regex_filter {"(\\d+)(,\\s*\\d+){2}"}; // new regex pattern
-
-    							fileHandler trace_reader = fileHandler(argv[2], trace_params, regex_filter);
+								fileHandler trace_reader = fileHandler(argv[2],
+										library.getTraceParamRules(), library.getTraceRegexRules());
 
     							if(trace_reader.isFileValid()){
-
     								library.addTraceFile(argv[2]);
 
     								std::cout << "Done!\n";
@@ -301,7 +328,7 @@ int main(int argc, char** argv){
     				}
 
     				if(!valid_use){
-    					std::cout << "ERROR: Improper switch use; The operations concerning Trace File are as followed:\n";
+    					std::cout << "ERROR: Improper switch use; The operations concerning Trace files are as follows:\n";
     					traceHelp();
     				}
 
@@ -310,13 +337,63 @@ int main(int argc, char** argv){
 
     			case 'w': {
     				/*
-    				 * list objects contained in the simulator wallet
+    				 * list objects contained in the simulator wallet"rcr count"
     				 *
     				 * usage:
     				 * 		./drachma -w
     				 */
 
     				library.printDetails();
+    				goto exit;
+    			}
+
+    			case 's': {
+    				/*
+    				 * start simulation
+    				 *
+    				 * usage:
+    				 * 		./drachma -s MEMORY_ID APPLICATION_ID TRACE_ID
+    				 */
+
+    				if(argc == 5 || argc == 6){
+
+    					// initialize the simulation device
+    					//device sim_device = library.getDevice( atoi(argv[2]) );
+    					device sim_device = device();
+
+
+    					// get memory hierarchy
+    					reconfigurableRegions memory = library.getMemory( atoi(argv[2]) );
+
+    					// get application
+    					application* app = library.getApplication( atoi(argv[3]) );
+
+    					// get application traces
+    					std::vector<std::string> traces = library.getTraceFile( atoi(argv[4]) );
+
+
+    					// apply memory hierarchy to device
+    					sim_device.associateHierarchy(memory);
+
+    					// prepare device resources needed by the application
+    					if (sim_device.prepareApplicationResources(app)) {
+
+    						sim_device.parseTraceFile(traces);
+
+        					// if specified, stop the simulation after a certain mount of clock cycles
+        					if(argc == 5)
+        						sim_device.simulateApplication();
+        					else
+        						sim_device.simulateApplication(atoi(argv[5]));
+
+    					} else
+    						std::cout << "ERROR: Chosen application's bitstream library is too large to fit in the selected memory hierarchy.\n";
+
+    				}else{
+    					std::cout << "ERROR: Improper switch use; The operations concerning Starting the Simulator are as follows:\n";
+    					startHelp();
+    				}
+
     				goto exit;
     			}
 

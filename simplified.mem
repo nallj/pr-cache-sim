@@ -1,7 +1,7 @@
 
 #	Example Memory File for Drachma
 
-name: Realistic Memory Configuration
+name: Simplified Memory Configuration
 
 /#
 	this is where you would put defining parameters
@@ -35,20 +35,9 @@ name: Realistic Memory Configuration
 			> required if declaring a cache level
 		l1 search latency: "lowest cache level search cost (in clock cycles)"*
 			> required if declaring a cache level
-		"l1 has LUT" (no corresponding value): "LUTs may be used by the PRC to
-			avoid searching a memory level to determine if it has a target
-			module - without this option, the PRC will suffer a search
-			penalty denoted by the level's search latency"
 #/
 
 main name: DDR RAM
 main size: 256000
 main read latency: 8
 main search latency: 32
-
-l1 name: BlockRAM
-l1 size: 128000
-l1 read latency: 2
-l1 search latency: 4
-l1 has LUT
-

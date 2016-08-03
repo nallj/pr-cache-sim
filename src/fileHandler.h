@@ -19,7 +19,7 @@ class fileHandler{
 
 	public:
 		// Constructors //
-		fileHandler(){};
+		fileHandler() {}
 
 		fileHandler(std::string input, std::vector<std::string> accept); // desired paramters only
 

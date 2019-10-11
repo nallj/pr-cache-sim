@@ -81,3 +81,27 @@ rr4 bitstream size: 8
 rr4 module 0 speed: 100.00
 rr4 module 1 speed: 100.00
 
+
+
+
+
+###### TODO SECTION ######
+
+
+
+########## DO NOT USE ###################
+############### NEW SECTION
+
+# Task Declarations (what type of IP are used in this application?)
+
+# T1: Blah 1
+# ...
+# T9: Blah 9
+
+# Which RRs have bitstreams making IP available to the RR
+
+# rr0 t1 t3 t7 t9
+# ...
+# rr4 t1 t2 t6   
+
+

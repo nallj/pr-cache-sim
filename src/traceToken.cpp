@@ -1,81 +1,104 @@
-#ifndef _TRACE_TOKEN_
-#define _TRACE_TOKEN_
-
 #include "traceToken.h"
 
+std::ostream& operator<<(std::ostream& output, const traceToken* trace) {
+
+	if (trace->addressing_static_region_)
+		output << "s";
+
+	output << trace->region_id_ << ", "
+				<< trace->module_id_ << ", "
+				<< trace->request_time_ << ", "
+				<< trace->execution_time_;
+
+	if (trace->is_dependent_)
+		output << ", " << trace->dependency_id_;
+
+		return output;
+}
+
+// overload the greater than operator
+bool operator>(const traceToken &t1, const traceToken &t2) {
+	return t1.request_time_ > t2.request_time_;
+}
 
 /* PUBLIC */
 
-	traceToken::traceToken(std::string trace_string) {
+traceToken::traceToken() { };
 
-		std::size_t next_comma = trace_string.find(",");
-		std::string region_id = trace_string.substr(0, next_comma);
+traceToken::traceToken(std::string trace_string) {
 
-		if (region_id.at(0) == 's') {
-			region_id = region_id.substr(1);
-			addressing_static_region_ = true;
+	std::size_t next_comma = trace_string.find(",");
+	std::string region_id = trace_string.substr(0, next_comma);
 
-		} else
-			addressing_static_region_ = false;
+	if (region_id.at(0) == 's') {
+		region_id = region_id.substr(1);
+		addressing_static_region_ = true;
 
-		region_id_ = std::stol(region_id);
+	} else
+		addressing_static_region_ = false;
 
-		trace_string = trace_string.substr(next_comma + 1);
-		next_comma = trace_string.find(",");
+	region_id_ = std::stol(region_id);
 
-		module_id_ = std::stol( trace_string.substr(0, next_comma) );
+	trace_string = trace_string.substr(next_comma + 1);
+	next_comma = trace_string.find(",");
 
-		trace_string = trace_string.substr(next_comma + 1);
-		next_comma = trace_string.find(",");
+	module_id_ = std::stol( trace_string.substr(0, next_comma) );
 
-		request_time_ = std::stol( trace_string.substr(0, next_comma) );
+	trace_string = trace_string.substr(next_comma + 1);
+	next_comma = trace_string.find(",");
 
-		trace_string = trace_string.substr(next_comma + 1);
-		next_comma = trace_string.find(",");
+	request_time_ = std::stol( trace_string.substr(0, next_comma) );
 
-		execution_time_ = std::stol( trace_string.substr(0, next_comma) );
+	trace_string = trace_string.substr(next_comma + 1);
+	next_comma = trace_string.find(",");
 
-		trace_string = trace_string.substr(next_comma + 1);
+	execution_time_ = std::stol( trace_string.substr(0, next_comma) );
 
-		if (trace_string.length() != 0) {
-			is_dependent_ = true;
-			dependency_id_ = std::stol(trace_string);
-		} else
-			is_dependent_ = false;
-	}
+	trace_string = trace_string.substr(next_comma + 1);
 
-	void traceToken::printTokenDetails() {
-		if (addressing_static_region_)
-			std::cout << "s";
+	if (trace_string.length() != 0) {
+		is_dependent_ = true;
+		dependency_id_ = std::stol(trace_string);
+	} else
+		is_dependent_ = false;
+}
 
-		std::cout << region_id_ << ", " << module_id_ << ", " << request_time_ << ", " << execution_time_;
+bool traceToken::isForStaticRegion() {
+	return addressing_static_region_;
+}
 
-		if (is_dependent_)
-			std::cout << ", " << dependency_id_;
+bool traceToken::isDependent() {
+	return is_dependent_;
+}
 
-		std::cout << "\n";
-	}
+unsigned traceToken::getRegionId() {
+	return region_id_;
+}
 
-	std::ostream& operator<<(std::ostream& output, const traceToken* trace) {
+unsigned traceToken::getModuleId() {
+	return module_id_;
+}
 
-		if (trace->addressing_static_region_)
-			output << "s";
+unsigned traceToken::getRequestTime() {
+	return request_time_;
+}
 
-		output << trace->region_id_ << ", "
-			   << trace->module_id_ << ", "
-			   << trace->request_time_ << ", "
-			   << trace->execution_time_;
+unsigned traceToken::getExectionTime() {
+	return execution_time_;
+}
 
-		if (trace->is_dependent_)
-			output << ", " << trace->dependency_id_;
+unsigned traceToken::getDependencyId() {
+	return dependency_id_;
+}
 
-	    return output;
-	}
+void traceToken::printTokenDetails() {
+	if (addressing_static_region_)
+		std::cout << "s";
 
-	// overload the greater than operator
-	bool operator>(const traceToken &t1, const traceToken &t2) {
-		return t1.request_time_ > t2.request_time_;
-	}
+	std::cout << region_id_ << ", " << module_id_ << ", " << request_time_ << ", " << execution_time_;
 
+	if (is_dependent_)
+		std::cout << ", " << dependency_id_;
 
-#endif
+	std::cout << "\n";
+}

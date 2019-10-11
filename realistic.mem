@@ -31,14 +31,30 @@ name: Realistic Memory Configuration
 		l1 size: "lowest cache level size (in kB)"*
 			level's supported up to l9
 			> required if declaring a cache level
+
+		l1 associativity: "lowest cache level placement scheme (positive integer)"*
+			if the associativity is not specified, its' default placement scheme
+			will be fully associative.  specify 1 for direct-mapping. any integer
+			greater than 1 will be n-way set associative.
+			> required if declaring a cache level that is not fully associative
+		l1 replacement: "lowest cache replacement policy"*
+			only valid with a non-direct mapped associativity; it is otherwise
+			ignored. if the replacement policy is not specified, the default
+			replacement policy is the 'random policy.'  Possible options include:
+				1. LRU       2. LFU       3. FIFO
+			> required if declaring a cache level that is not direct-mapped
+
 		l1 read latency: "lowest cache level read cost (in clock cycles)"*
+			the time cost incurred when transferring a found bitstream from
+			the cache level to the PR regions
 			> required if declaring a cache level
 		l1 search latency: "lowest cache level search cost (in clock cycles)"*
-			> required if declaring a cache level
+			> required if declaring a cache level that is not directly-mapped
+
 		"l1 has LUT" (no corresponding value): "LUTs may be used by the PRC to
 			avoid searching a memory level to determine if it has a target
-			module - without this option, the PRC will suffer a search
-			penalty denoted by the level's search latency"
+			module - without this option, the PRC will suffer a search penalty
+			(if not directly mapped) denoted by the level's search latency"
 #/
 
 main name: DDR RAM

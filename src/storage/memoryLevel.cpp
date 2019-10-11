@@ -1,75 +1,101 @@
-/*#ifndef _MEMORY_LEVEL_
-#define _MEMORY_LEVEL_
-
 #include "memoryLevel.h"
 
+memoryLevel::memoryLevel() :
+	storageUnit(0, 0, 0),
+	replacement_alg_(NULL) { }
 
-/* PUBLIC */
-/*	memoryLevel::memoryLevel() : storageUnit(0, NULL, 0, 0) { }
-		//unit_size_(0), replacement_alg_(NULL), read_latency_(0), search_latency_(0),
-		//child_unit_(NULL){ }
+// intended for main memory (automatically LUT indexed)
+memoryLevel::memoryLevel(
+	unsigned unit_size,
+	replAlg* repl_alg,
+	unsigned short read_latency,
+	unsigned short search_latency
+) :
+	storageUnit(unit_size, read_latency, search_latency),
+	replacement_alg_(repl_alg),
+	contents_lut_indexed_(true) { }
 
-	memoryLevel::memoryLevel(unsigned unit_size, replAlg* repl_alg, unsigned short read_latency,
-		 unsigned short search_latency) :
-			storageUnit(unit_size, repl_alg, read_latency, search_latency),
-			contents_lut_indexed_(true) {}
+// intended for cache levels
+memoryLevel::memoryLevel(
+	unsigned unit_size,
+	replAlg* repl_alg,
+	unsigned short read_latency,
+	unsigned short search_latency,
+	bool lut_indexed
+) :
+	storageUnit(unit_size, read_latency, search_latency),
+	replacement_alg_(repl_alg),
+	contents_lut_indexed_(lut_indexed) { }
 
-	memoryLevel::memoryLevel(unsigned unit_size, replAlg* repl_alg, unsigned short read_latency,
-		 unsigned short search_latency, bool lut_indexed) :
-			storageUnit(unit_size, repl_alg, read_latency, search_latency),
-			contents_lut_indexed_(lut_indexed) {}
-		//unit_size_(unit_size), replacement_alg_(repl_alg), read_latency_(read_latency),
-		//search_latency_(search_latency), child_unit_(NULL){ // , parent_unit_(NULL)
+memoryLevel::memoryLevel(const storageUnit& su) :
+	storageUnit(su) { }
 
 
-	void memoryLevel::printDetails(){
+// Operational Methods (inherited) //
 
-		if(replacement_alg_ == NULL && read_latency_ == 0 && search_latency_ == 0)
-			//std::cout << "\t\t\t'Reconfigurable Regions'\n\t\t\t\tParameter: size(" << unit_size_ << ")\n";'
-			std::cout << "\t\t\t'Reconfigurable Regions'\n";
-		else
-			std::cout << "\t\t\t'" << name_ << "'\n"
-				  	  << "\t\t\t\tParameters: size(" << unit_size_ << "), read latency(" << read_latency_
-					  << "), search latency(" << search_latency_ << ")\n";
+void memoryLevel::printDetails() {
 
-		if(replacement_alg_) replacement_alg_->printName();
+	std::cout << "\t\t\t'" << name_ << "'\n"
+				<< "\t\t\t\tParameters: size(" << unit_size_ << "), read latency(" << read_latency_
+				<< "), search latency(" << search_latency_ << ")\n";
+
+	if (replacement_alg_) replacement_alg_->printName();
+}
+
+//void attemptModule(unsigned module_index);
+// never should happen unless you're trying to bring down a module (read done, now copy)
+void memoryLevel::attemptModule(unsigned module_index) { // attempt an insert; use repl alg to decide approach
+
+	// nothing here but us chickens
+
+}
+
+bool memoryLevel::isModulePresent(unsigned region_id,unsigned module_id) {
+
+	std::map<unsigned, std::map<unsigned, module*>>::iterator region_it
+		= module_reference_table_.find(region_id);
+
+	if (region_it != module_reference_table_.end()) {
+
+		std::map<unsigned, module*>::iterator module_it
+			= region_it->second.find(module_id);
+
+		if (module_it != region_it->second.end())
+			return true;
 	}
 
-	// never should happen unless you're trying to bring down a module (read done, now copy)
-	void memoryLevel::attemptModule(unsigned module_index){ // attempt an insert; use repl alg to decide approach
+	return false;
+}
 
-		if(hasSpace()){ // cache level is not full
+void memoryLevel::insertModule(module* new_module) {
 
-			insertModule( new module(module_index, 777, 0) );
-			//updateAlg(false, module_index);
+	unsigned region_id = new_module->getRegionId();
+	unsigned module_id = new_module->getModuleId();
 
-			std::cout << "\n\tThere is room for this NEW ENTRY <" << module_index << ">\n";
-			replacement_alg_->newEntryUpdate(module_index);
+	std::map<unsigned, std::map<unsigned, module*>>::iterator region_it
+		= module_reference_table_.find(region_id);
 
-		}else{ // need to replace something
+	if (region_it == module_reference_table_.end())
+		module_reference_table_[region_id][module_id] = new_module;
 
-			unsigned victim_id = replacement_alg_->replace(module_index);
-			unsigned victim_module = module_table_[victim_id]->getId();
+	else
+		region_it->second[module_id] = new_module;
+}
 
-			evictModule( victim_id );
-			insertModule( new module(module_index, 777, 0) );
-			//updateAlg(true, module_index);
-		}
 
-	}
+// Operational Methods (unique) //
+bool memoryLevel::isLutIndexed() {
+	return contents_lut_indexed_;
+};
 
-	bool memoryLevel::isModulePresent(unsigned module_index){
+module* memoryLevel::getModule(unsigned region_id, unsigned module_id) {
+	return module_reference_table_[region_id][module_id];
+}
 
-		for(unsigned i = 0; i < module_table_.size(); i++)
-			if(module_table_[i]->getId() == module_index)
-				return true;
+bool memoryLevel::hasSpace() {
+	return false;
+}
 
-		return false;
-	}
-
-	void memoryLevel::insertModule(module* new_module){
-		module_table_.push_back(new_module);
-	}
-
-#endif
-*/
+void memoryLevel::evictModule(unsigned table_index) {
+	// do eviction stuff here
+}

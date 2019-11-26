@@ -23,7 +23,7 @@
 
 //enum memAction { SEARCH, TRANSFER, EXECUTE, VACANT, IDLE, UNKNOWN };
 
-class device{
+class device {
 
 	std::multimap<unsigned, std::vector<module*>> static_regions_;
 	//std::map<unsigned, unsigned> prr_index_;

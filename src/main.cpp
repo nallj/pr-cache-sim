@@ -1,6 +1,3 @@
-#ifndef _MAIN_
-#define _MAIN_
-
 #include <iostream>
 #include <string>
 #include <cstring>
@@ -376,16 +373,18 @@ int main(int argc, char** argv) {
 
 							sim_device.parseTraceFile(traces);
 
-								// if specified, stop the simulation after a certain mount of clock cycles
-								if (argc == 5)
-									sim_device.simulateApplication();
-								else
-									sim_device.simulateApplication( atoi(argv[5]) );
+							// if specified, stop the simulation after a certain mount of clock cycles
+							if (argc == 5) {
+								sim_device.simulateApplication();
+							} else {
+								sim_device.simulateApplication( atoi(argv[5]) );
+							}
 
-						} else
+						} else {
 							std::cout << "ERROR: Chosen application's bitstream library is too large to fit in the selected memory hierarchy.\n";
+						}
 
-					}else{
+					} else {
 						std::cout << "ERROR: Improper switch use; The operations concerning Starting the Simulator are as follows:\n";
 						startHelp();
 					}
@@ -397,7 +396,7 @@ int main(int argc, char** argv) {
 			}
 		}
 
-	}else{ // no switches - default action
+	} else { // no switches - default action
 
 		std::cout << ">>> No Switches Present!  Have some help:" << std::endl << std::endl;
 		displayHelp();
@@ -407,5 +406,3 @@ int main(int argc, char** argv) {
 	std::cout << std::endl;
 	return 0;
 }
-
-#endif

@@ -2,7 +2,7 @@
 # a Reconfigurable Computing Cache Replacement Simulator
 # written by James B. Nall
 
-# Copyright (C) 2015-2017, All Rights Reserved
+# Copyright (C) 2015-2019, All Rights Reserved
 
 CXX = g++
 CXXFLAGS = -std=c++11 -o

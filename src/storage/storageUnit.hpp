@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include "module.h"
+#include "module.hpp"
 
 class memoryLevel;
 

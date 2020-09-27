@@ -1,4 +1,4 @@
-#include "randomAlg.h"
+#include "randomAlg.hpp"
 
 /* PUBLIC */
 

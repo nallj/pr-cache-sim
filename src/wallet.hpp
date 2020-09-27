@@ -7,19 +7,19 @@
 #include <iostream>
 #include <map>
 
-#include "fileHandler.h"
-#include "device.h"
-#include "application.h"
+#include "fileHandler.hpp"
+#include "device.hpp"
+#include "application.hpp"
 
-#include "storage/storageUnit.h"
-#include "storage/memoryLevel.h"
-#include "storage/reconfigurableRegions.h"
+#include "storage/storageUnit.hpp"
+#include "storage/memoryLevel.hpp"
+#include "storage/reconfigurableRegions.hpp"
 
-//#include "algs/randomAlg.h" // random replacement
-#include "algs/fifoAlg.h" // fifo replacement
+//#include "algs/randomAlg.hpp" // random replacement
+#include "algs/fifoAlg.hpp" // fifo replacement
 
-#include "components/icap.h"
-#include "components/prc.h"
+#include "components/icap.hpp"
+#include "components/prc.hpp"
 
 
 // wallet acts as a library for drachma

@@ -3,8 +3,8 @@
 
 #include <map>
 
-#include "storageUnit.h"
-#include "../algs/replAlg.h"
+#include "storageUnit.hpp"
+#include "../algs/replAlg.hpp"
 
 class memoryLevel : public storageUnit {
 

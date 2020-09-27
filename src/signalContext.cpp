@@ -1,4 +1,4 @@
-#include "signalContext.h"
+#include "signalContext.hpp"
 
 /* PUBLIC */
 

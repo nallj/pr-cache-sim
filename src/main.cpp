@@ -3,12 +3,12 @@
 #include <cstring>
 #include <sys/stat.h>
 
-#include "wallet.h"
-#include "device.h"
-#include "fileHandler.h"
+#include "wallet.hpp"
+#include "device.hpp"
+#include "fileHandler.hpp"
 
-#include "storage/reconfigurableRegions.h"
-#include "storage/module.h"
+#include "storage/reconfigurableRegions.hpp"
+#include "storage/module.hpp"
 
 
 bool fileExists(const std::string& file) {

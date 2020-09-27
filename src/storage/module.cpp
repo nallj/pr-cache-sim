@@ -1,4 +1,4 @@
-#include "module.h"
+#include "module.hpp"
 
 module::module() :
   region_id_(-1), module_id_(-1), bitstream_width_(0), operating_speed_(0) { }

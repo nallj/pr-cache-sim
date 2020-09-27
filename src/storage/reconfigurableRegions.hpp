@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include "storageUnit.h"
+#include "storageUnit.hpp"
 
 class reconfigurableRegions : public storageUnit {
 

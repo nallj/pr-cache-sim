@@ -1,4 +1,4 @@
-#include "prc.h"
+#include "prc.hpp"
 
 static const unsigned prcStateStalls[] = {
   0, // PRC_INIT
@@ -99,7 +99,7 @@ void prc::step() {
         next_state_ = PRC_FIND_LOOP;
         break;
 
-      case PRC_FIND_LOOP:
+      case PRC_FIND_LOOP: {
         std::cout << "passing FIND LOOP stage - ";
 
         // This was removed because it doesn't make sense.
@@ -196,7 +196,7 @@ void prc::step() {
         // }
 
         break;
-
+      }
       case PRR_START:
         std::cout << "passing PRR START stage - ";
 
@@ -260,6 +260,7 @@ void prc::step() {
 
       default:
         std::cout << "ERROR: PRC is in an UNKNOWN STATE!\n";
+        throw;
     }
   }
 

@@ -5,11 +5,11 @@
 #include <vector>
 #include <deque>
 
-#include "../globals.h"
-#include "../traceToken.h"
-#include "../storage/memoryLevel.h"
-#include "../storage/reconfigurableRegions.h"
-#include "prrLevelController.h"
+#include "../globals.hpp"
+#include "../traceToken.hpp"
+#include "../storage/memoryLevel.hpp"
+#include "../storage/reconfigurableRegions.hpp"
+#include "prrLevelController.hpp"
 
 enum prcState {
   PRC_INIT,

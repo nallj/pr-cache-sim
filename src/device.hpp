@@ -10,16 +10,16 @@
 #include <queue>
 #include <map>
 
-#include "fileHandler.h"
-#include "application.h"
-#include "signalContext.h"
-#include "traceToken.h"
-#include "components/icap.h"
-#include "components/prc.h"
-#include "components/prrLevelController.h"
-#include "storage/storageUnit.h"
-#include "storage/memoryLevel.h"
-#include "storage/reconfigurableRegions.h"
+#include "fileHandler.hpp"
+#include "application.hpp"
+#include "signalContext.hpp"
+#include "traceToken.hpp"
+#include "components/icap.hpp"
+#include "components/prc.hpp"
+#include "components/prrLevelController.hpp"
+#include "storage/storageUnit.hpp"
+#include "storage/memoryLevel.hpp"
+#include "storage/reconfigurableRegions.hpp"
 
 //enum memAction { SEARCH, TRANSFER, EXECUTE, VACANT, IDLE, UNKNOWN };
 

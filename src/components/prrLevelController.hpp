@@ -7,10 +7,10 @@
 #include <queue>
 #include <utility>
 
-#include "../globals.h"
-#include "../storage/reconfigurableRegions.h"
-#include "../storage/memoryLevel.h"
-#include "../traceToken.h"
+#include "../globals.hpp"
+#include "../storage/reconfigurableRegions.hpp"
+#include "../storage/memoryLevel.hpp"
+#include "../traceToken.hpp"
 
 
 enum prrControllerState { PRR_INIT, PRR_IDLE, PRR_WAIT, PRR_TRANSFER };

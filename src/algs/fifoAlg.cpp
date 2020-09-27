@@ -1,4 +1,4 @@
-#include "fifoAlg.h"
+#include "fifoAlg.hpp"
 
 /* PUBLIC */
 

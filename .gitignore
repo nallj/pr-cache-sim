@@ -1,0 +1,11 @@
+# Ignore build directory.
+build
+
+# Ignore Mac stuff.
+.DS_Store
+
+# Ignore VS Code settings.
+.vscode
+
+# Ignore binary if built.
+drachma

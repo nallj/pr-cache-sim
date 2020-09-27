@@ -7,10 +7,10 @@
 #include <functional>
 #include <deque>
 
-#include "../globals.h"
-#include "../traceToken.h"
-#include "../storage/memoryLevel.h"
-#include "../storage/reconfigurableRegions.h"
+#include "../globals.hpp"
+#include "../traceToken.hpp"
+#include "../storage/memoryLevel.hpp"
+#include "../storage/reconfigurableRegions.hpp"
 
 enum icapState { ICAP_INIT, ICAP_IDLE, ICAP_WAIT, ICAP_LOCK_PRR, ICAP_TRANSFER };
 

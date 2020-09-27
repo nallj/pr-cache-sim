@@ -1,4 +1,4 @@
-#include "icap.h"
+#include "icap.hpp"
 
 static const unsigned icapStateStalls[] = {
   0, // ICAP_INIT

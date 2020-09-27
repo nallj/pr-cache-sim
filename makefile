@@ -1,31 +1,9 @@
-# makefile for Drachma:
-# a Reconfigurable Computing Cache Replacement Simulator
-# written by James B. Nall
 
-# Copyright (C) 2015-2019, All Rights Reserved
+create: build-dir
+	cd build && cmake -DBoost_DIR=/usr/local/Cellar/boost/1.73.0/ .. && make && mv src/drachma ..
 
-CXX = g++
-CXXFLAGS = -std=c++11 -o
-
-all: src/main.cpp src/globals.h src/application.h src/application.cpp src/device.h src/device.cpp \
-	src/fileHandler.h src/fileHandler.cpp src/algs/replAlg.h src/algs/replAlg.cpp src/signalContext.h \
-	src/signalContext.cpp src/traceToken.h src/traceToken.cpp src/wallet.h src/wallet.cpp \
-	src/algs/fifoAlg.h src/algs/fifoAlg.cpp src/algs/randomAlg.h src/algs/randomAlg.cpp \
-	src/components/icap.h src/components/icap.cpp src/components/prc.h src/components/prc.cpp \
-	src/components/prrLevelController.h src/components/prrLevelController.cpp src/storage/memoryLevel.h \
-	src/storage/memoryLevel.cpp src/storage/module.h src/storage/module.cpp \
-	src/storage/reconfigurableRegions.h src/storage/reconfigurableRegions.cpp src/storage/storageUnit.h \
-	src/storage/storageUnit.cpp
-
-	cd src && \
-	$(CXX) -g $(CXXFLAGS) ../drachma main.cpp globals.h application.h application.cpp device.h \
-	device.cpp fileHandler.h fileHandler.cpp signalContext.h signalContext.cpp \
-	traceToken.h traceToken.cpp wallet.h wallet.cpp algs/replAlg.h algs/replAlg.cpp \
-	algs/randomAlg.cpp components/icap.h components/icap.cpp components/prc.h \
-	components/prc.cpp components/prrLevelController.h components/prrLevelController.cpp \
-	storage/memoryLevel.h storage/memoryLevel.cpp storage/module.h storage/module.cpp \
-	storage/reconfigurableRegions.h storage/reconfigurableRegions.cpp storage/storageUnit.h \
-	storage/storageUnit.cpp -lboost_regex
+build-dir:
+	mkdir -p build
 
 clean:
-	rm -f *.o drachma
+	rm -rf drachma build

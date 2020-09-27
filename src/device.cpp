@@ -1,4 +1,4 @@
-#include "device.h"
+#include "device.hpp"
 
 /* PUBLIC */
 
@@ -10,7 +10,7 @@ void device::associateHierarchy(reconfigurableRegions memory_hierarchy) {
   storageUnit* ptr = &memory_hierarchy;
   memory_hierarchy_.push_back(ptr);
 
-  while (ptr = ptr->getChild()) {
+  while ((ptr = ptr->getChild())) {
     memory_hierarchy_.push_back(ptr);
   }
 }

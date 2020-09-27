@@ -1,4 +1,4 @@
-#include "reconfigurableRegions.h"
+#include "reconfigurableRegions.hpp"
 
 reconfigurableRegions::reconfigurableRegions() : storageUnit(0, 0, 0) { }
 

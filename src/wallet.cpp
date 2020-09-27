@@ -1,4 +1,4 @@
-#include "wallet.h"
+#include "wallet.hpp"
 
 /* PUBLIC */
 

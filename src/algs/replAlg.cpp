@@ -1,4 +1,4 @@
-#include "replAlg.h"
+#include "replAlg.hpp"
 
 /* PUBLIC */
 

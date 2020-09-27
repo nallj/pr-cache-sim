@@ -4,8 +4,8 @@
 #include <map>
 #include <vector>
 
-#include "components/icap.h"
-#include "components/prc.h"
+#include "components/icap.hpp"
+#include "components/prc.hpp"
 
 class application {
 

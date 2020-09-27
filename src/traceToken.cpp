@@ -1,4 +1,4 @@
-#include "traceToken.h"
+#include "traceToken.hpp"
 
 std::ostream& operator<<(std::ostream& output, const traceToken* trace) {
 

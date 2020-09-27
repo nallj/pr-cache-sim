@@ -3,7 +3,7 @@
 
 #include <random>
 
-#include "replAlg.h"
+#include "replAlg.hpp"
 
 class randomAlg : public replAlg{
 

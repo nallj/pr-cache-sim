@@ -1,7 +1,7 @@
 #ifndef FIFO_ALG
 #define FIFO_ALG
 
-#include "replAlg.h"
+#include "replAlg.hpp"
 
 class fifoAlg : public replAlg {
 

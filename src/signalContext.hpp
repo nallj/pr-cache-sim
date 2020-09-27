@@ -5,10 +5,10 @@
 #include <vector>
 #include <deque>
 
-#include "globals.h"
-#include "components/prc.h"
-#include "components/icap.h"
-#include "traceToken.h"
+#include "globals.hpp"
+#include "components/prc.hpp"
+#include "components/icap.hpp"
+#include "traceToken.hpp"
 
 class signalContext {
 

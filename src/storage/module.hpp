@@ -6,7 +6,7 @@
 #include <math.h>
 #include <iostream>
 
-#include "../globals.h"
+#include "../globals.hpp"
 
 class module {
 

@@ -1,9 +1,9 @@
 /#
-	This is a Wallet file
-	
-	The single wallet file keeps track of the
-	different devices, memory configurations,
-	and trace files that you may desire to use
+  This is a Wallet file
+  
+  The single wallet file keeps track of the
+  different devices, memory configurations,
+  and trace files that you may desire to use
 #/
 
 name: My Drachma Wallet

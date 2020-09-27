@@ -17,57 +17,57 @@ enum prrControllerState { PRR_INIT, PRR_IDLE, PRR_WAIT, PRR_TRANSFER };
 
 class prrLevelController {
 
-	prrControllerState current_state_, next_state_;
+  prrControllerState current_state_, next_state_;
 
-	reconfigurableRegions* prr_;
-	std::vector<storageUnit*> *memory_hierarchy_;
+  reconfigurableRegions* prr_;
+  std::vector<storageUnit*> *memory_hierarchy_;
 
-	unsigned prr_id_;
+  unsigned prr_id_;
 
-	double sim_speed_;
+  double sim_speed_;
 
 
-	// IN signals
-	bool *prc_start_, *prc_enqueue_, *icap_req_, *icap_trans_;
+  // IN signals
+  bool *prc_start_, *prc_enqueue_, *icap_req_, *icap_trans_;
 
-	traceToken** prc_current_trace_ptr_;
-	traceToken* prc_current_trace_;
+  traceToken** prc_current_trace_ptr_;
+  traceToken* prc_current_trace_;
 
-	unsigned* icap_mc_;
-	unsigned memory_counter_;
-	traceToken** icap_current_trace_ptr_;
-	traceToken* icap_current_trace_;
+  unsigned* icap_mc_;
+  unsigned memory_counter_;
+  traceToken** icap_current_trace_ptr_;
+  traceToken* icap_current_trace_;
 
-	// OUT signals
-	bool prr_executing_, icap_ack_, prc_ack_;
+  // OUT signals
+  bool prr_executing_, icap_ack_, prc_ack_;
 
-	// INTERNAL
-	std::queue<traceToken*> action_queue_;
+  // INTERNAL
+  std::queue<traceToken*> action_queue_;
 
 public:
-	prrLevelController(
-		unsigned prr_id,
-		reconfigurableRegions* memory_hierarchy_top,
-		std::vector<storageUnit*>* memory_hierarchy,
-		double sim_speed
-	);
+  prrLevelController(
+    unsigned prr_id,
+    reconfigurableRegions* memory_hierarchy_top,
+    std::vector<storageUnit*>* memory_hierarchy,
+    double sim_speed
+  );
 
-	~prrLevelController();
+  ~prrLevelController();
 
-	void connect(
-		bool *prc_start,
-		bool *prc_enqueue,
-		unsigned *icap_mc,
-		bool *icap_req,
-		bool *icap_trans,
-		traceToken** prc_current_trace_ptr,
-		traceToken** icap_current_trace_ptr
-	);
+  void connect(
+    bool *prc_start,
+    bool *prc_enqueue,
+    unsigned *icap_mc,
+    bool *icap_req,
+    bool *icap_trans,
+    traceToken** prc_current_trace_ptr,
+    traceToken** icap_current_trace_ptr
+  );
 
-	void step();
+  void step();
 
-	// PRR_EXE, PRR_PRC_ACK, PRR_ICAP_ACK
-	bool* accessSignal(prrCtrlSignal signal);
+  // PRR_EXE, PRR_PRC_ACK, PRR_ICAP_ACK
+  bool* accessSignal(prrCtrlSignal signal);
 };
 
 #endif

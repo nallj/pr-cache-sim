@@ -8,7 +8,7 @@ CXX = g++
 CXXFLAGS = -std=c++11 -o
 
 all: src/main.cpp src/globals.h src/application.h src/application.cpp src/device.h src/device.cpp \
-	src/fileHandler.h src/fileHandler.cpp src/replAlg.h src/replAlg.cpp src/signalContext.h \
+	src/fileHandler.h src/fileHandler.cpp src/algs/replAlg.h src/algs/replAlg.cpp src/signalContext.h \
 	src/signalContext.cpp src/traceToken.h src/traceToken.cpp src/wallet.h src/wallet.cpp \
 	src/algs/fifoAlg.h src/algs/fifoAlg.cpp src/algs/randomAlg.h src/algs/randomAlg.cpp \
 	src/components/icap.h src/components/icap.cpp src/components/prc.h src/components/prc.cpp \
@@ -19,8 +19,8 @@ all: src/main.cpp src/globals.h src/application.h src/application.cpp src/device
 
 	cd src && \
 	$(CXX) -g $(CXXFLAGS) ../drachma main.cpp globals.h application.h application.cpp device.h \
-	device.cpp fileHandler.h fileHandler.cpp replAlg.h replAlg.cpp signalContext.h signalContext.cpp \
-	traceToken.h traceToken.cpp wallet.h wallet.cpp algs/fifoAlg.h algs/fifoAlg.cpp algs/randomAlg.h \
+	device.cpp fileHandler.h fileHandler.cpp signalContext.h signalContext.cpp \
+	traceToken.h traceToken.cpp wallet.h wallet.cpp algs/replAlg.h algs/replAlg.cpp \
 	algs/randomAlg.cpp components/icap.h components/icap.cpp components/prc.h \
 	components/prc.cpp components/prrLevelController.h components/prrLevelController.cpp \
 	storage/memoryLevel.h storage/memoryLevel.cpp storage/module.h storage/module.cpp \

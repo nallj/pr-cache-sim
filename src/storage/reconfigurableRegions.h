@@ -7,20 +7,22 @@
 
 class reconfigurableRegions : public storageUnit {
 
-	std::map<unsigned, module*> module_reference_table_;
+  std::map<unsigned, module*> module_reference_table_;
 
 public:
-	reconfigurableRegions();
+  reconfigurableRegions();
 
-	// Operational Methods (inherited) //
-	void printDetails();
-	void attemptModule(unsigned module_index);
-	bool isModulePresent(unsigned region_id, unsigned module_id);
-	void insertModule(module* new_module);
+  // Operational Methods (inherited) //
+  void printDetails();
+  bool isModulePresent(unsigned region_id, unsigned module_id);
+  void insertModule(module* new_module);
 
-	// Operational Methods (unique) //
-	module* getModuleFromRegion(unsigned region_id);
-	bool isRegionPopulated(unsigned region_id);
+  // Legacy (inherited)
+  void attemptModule(unsigned module_index);
+
+  // Operational Methods (unique) //
+  module* getModuleFromRegion(unsigned region_id);
+  bool isRegionPopulated(unsigned region_id);
 };
 
 #endif

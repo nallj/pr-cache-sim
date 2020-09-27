@@ -18,30 +18,30 @@ all: drachma
 
 #drachma: core.o hw.o
 drachma: core.o storage.o algs.o components.o controllers.o
-	$(C) $(CFLAGS) -o drachma core.o storage.o algs.o components.o controllers.o
+  $(C) $(CFLAGS) -o drachma core.o storage.o algs.o components.o controllers.o
 
 #core.o: $(s)/main.cpp $(s)/wallet.h $(s)/fileHandler.h $(s)/fileHandler.cpp $(s)/wallet.cpp $(s)/device.h $(s)/device.cpp $(s)/storageUnit.h $(s)/storageUnit.cpp $(s)/replAlg.h $(s)/module.h $(s)/module.cpp
 
 core.o: $(s)/main.cpp $(s)/globals.h $(s)/wallet.h $(s)/fileHandler.h $(s)/fileHandler.cpp $(s)/wallet.cpp $(s)/device.h $(s)/device.cpp $(s)/traceToken.h $(s)/traceToken.cpp $(s)/signalContext.h $(s)/application.h
-	$(C) $(CFLAGS) -c $(s)/main.cpp $(s)/fileHandler.cpp $(s)/wallet.cpp $(s)/device.cpp $(s)/traceToken.cpp
+  $(C) $(CFLAGS) -c $(s)/main.cpp $(s)/fileHandler.cpp $(s)/wallet.cpp $(s)/device.cpp $(s)/traceToken.cpp
 
 storage.o: $(m)/storageUnit.h $(m)/storageUnit.cpp $(m)/module.h $(m)/module.cpp $(m)/memoryLevel.h $(m)/memoryLevel.cpp $(m)/reconfigurableRegions.h $(m)/reconfigurableRegions.cpp
-	$(C) $(CFLAGS) -c $(m)/storageUnit.cpp $(m)/module.cpp $(m)/memoryLevel.cpp $(m)/reconfigurableRegions.cpp
+  $(C) $(CFLAGS) -c $(m)/storageUnit.cpp $(m)/module.cpp $(m)/memoryLevel.cpp $(m)/reconfigurableRegions.cpp
 
 #randomAlg.o: $(a)/randomAlg.h $(a)/randomAlg.cpp
 
 algs.o: $(s)/replAlg.h $(a)/randomAlg.h $(a)/randomAlg.cpp $(a)/fifoAlg.h $(a)/fifoAlg.cpp
-	$(C) $(CFLAGS) -c $(a)/randomAlg.cpp $(a)/fifoAlg.cpp
+  $(C) $(CFLAGS) -c $(a)/randomAlg.cpp $(a)/fifoAlg.cpp
 
 #fifoAlg.o: $(a)/fifoAlg.h $(a)/fifoAlg.cpp
 
 components.o: $(c)/icap.h $(c)/prc.h
-	$(C) $(CFLAGS) -c $(c)/icap.h $(c)/prc.h
+  $(C) $(CFLAGS) -c $(c)/icap.h $(c)/prc.h
 
 # replAlgs =  src/algs/fifoAlg.h src/algs/fifoAlg.cpp
 
 controllers.o: $(t)/prrLevelController.h $(t)/prrLevelController.cpp
-	$(C) $(CFLAGS) -c $(t)/prrLevelController.cpp
+  $(C) $(CFLAGS) -c $(t)/prrLevelController.cpp
 
 
 

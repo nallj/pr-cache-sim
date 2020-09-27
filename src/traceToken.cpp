@@ -2,23 +2,25 @@
 
 std::ostream& operator<<(std::ostream& output, const traceToken* trace) {
 
-	if (trace->addressing_static_region_)
-		output << "s";
+  if (trace->addressing_static_region_) {
+    output << "s";
+	}
 
-	output << trace->region_id_ << ", "
-				<< trace->module_id_ << ", "
-				<< trace->request_time_ << ", "
-				<< trace->execution_time_;
+  output << trace->region_id_ << ", "
+         << trace->module_id_ << ", "
+         << trace->request_time_ << ", "
+         << trace->execution_time_;
 
-	if (trace->is_dependent_)
-		output << ", " << trace->dependency_id_;
+  if (trace->is_dependent_) {
+    output << ", " << trace->dependency_id_;
+	}
 
-		return output;
+  return output;
 }
 
 // overload the greater than operator
 bool operator>(const traceToken &t1, const traceToken &t2) {
-	return t1.request_time_ > t2.request_time_;
+  return t1.request_time_ > t2.request_time_;
 }
 
 /* PUBLIC */
@@ -27,78 +29,82 @@ traceToken::traceToken() { };
 
 traceToken::traceToken(std::string trace_string) {
 
-	std::size_t next_comma = trace_string.find(",");
-	std::string region_id = trace_string.substr(0, next_comma);
+  std::size_t next_comma = trace_string.find(",");
+  std::string region_id = trace_string.substr(0, next_comma);
 
-	if (region_id.at(0) == 's') {
-		region_id = region_id.substr(1);
-		addressing_static_region_ = true;
+  if (region_id.at(0) == 's') {
+    region_id = region_id.substr(1);
+    addressing_static_region_ = true;
 
-	} else
-		addressing_static_region_ = false;
+  } else {
+    addressing_static_region_ = false;
+	}
 
-	region_id_ = std::stol(region_id);
+  region_id_ = std::stol(region_id);
 
-	trace_string = trace_string.substr(next_comma + 1);
-	next_comma = trace_string.find(",");
+  trace_string = trace_string.substr(next_comma + 1);
+  next_comma = trace_string.find(",");
 
-	module_id_ = std::stol( trace_string.substr(0, next_comma) );
+  module_id_ = std::stol( trace_string.substr(0, next_comma) );
 
-	trace_string = trace_string.substr(next_comma + 1);
-	next_comma = trace_string.find(",");
+  trace_string = trace_string.substr(next_comma + 1);
+  next_comma = trace_string.find(",");
 
-	request_time_ = std::stol( trace_string.substr(0, next_comma) );
+  request_time_ = std::stol( trace_string.substr(0, next_comma) );
 
-	trace_string = trace_string.substr(next_comma + 1);
-	next_comma = trace_string.find(",");
+  trace_string = trace_string.substr(next_comma + 1);
+  next_comma = trace_string.find(",");
 
-	execution_time_ = std::stol( trace_string.substr(0, next_comma) );
+  execution_time_ = std::stol( trace_string.substr(0, next_comma) );
 
-	trace_string = trace_string.substr(next_comma + 1);
+  trace_string = trace_string.substr(next_comma + 1);
 
-	if (trace_string.length() != 0) {
-		is_dependent_ = true;
-		dependency_id_ = std::stol(trace_string);
-	} else
-		is_dependent_ = false;
+  if (trace_string.length() != 0) {
+    is_dependent_ = true;
+    dependency_id_ = std::stol(trace_string);
+  } else {
+    is_dependent_ = false;
+	}
 }
 
 bool traceToken::isForStaticRegion() {
-	return addressing_static_region_;
+  return addressing_static_region_;
 }
 
 bool traceToken::isDependent() {
-	return is_dependent_;
+  return is_dependent_;
 }
 
 unsigned traceToken::getRegionId() {
-	return region_id_;
+  return region_id_;
 }
 
 unsigned traceToken::getModuleId() {
-	return module_id_;
+  return module_id_;
 }
 
 unsigned traceToken::getRequestTime() {
-	return request_time_;
+  return request_time_;
 }
 
 unsigned traceToken::getExectionTime() {
-	return execution_time_;
+  return execution_time_;
 }
 
 unsigned traceToken::getDependencyId() {
-	return dependency_id_;
+  return dependency_id_;
 }
 
 void traceToken::printTokenDetails() {
-	if (addressing_static_region_)
-		std::cout << "s";
+  if (addressing_static_region_) {
+    std::cout << "s";
+	}
 
-	std::cout << region_id_ << ", " << module_id_ << ", " << request_time_ << ", " << execution_time_;
+  std::cout << region_id_ << ", " << module_id_ << ", " << request_time_ << ", " << execution_time_;
 
-	if (is_dependent_)
-		std::cout << ", " << dependency_id_;
+  if (is_dependent_) {
+    std::cout << ", " << dependency_id_;
+	}
 
-	std::cout << "\n";
+  std::cout << "\n";
 }

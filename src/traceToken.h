@@ -12,33 +12,33 @@ bool operator>(const traceToken &t1, const traceToken &t2);
 
 class traceToken {
 
-	bool addressing_static_region_;
-	bool is_dependent_;
+  bool addressing_static_region_;
+  bool is_dependent_;
 
-	unsigned region_id_;
-	unsigned module_id_;
-	unsigned request_time_;
-	unsigned execution_time_;
-	unsigned dependency_id_;
+  unsigned region_id_;
+  unsigned module_id_;
+  unsigned request_time_;
+  unsigned execution_time_;
+  unsigned dependency_id_;
 
 public:
-	traceToken();
-	traceToken(std::string trace_string);
-	// ~traceToken() {};
+  traceToken();
+  traceToken(std::string trace_string);
+  // ~traceToken() {};
 
-	bool isForStaticRegion();
-	bool isDependent();
+  bool isForStaticRegion();
+  bool isDependent();
 
-	unsigned getRegionId();
-	unsigned getModuleId();
-	unsigned getRequestTime();
-	unsigned getExectionTime();
-	unsigned getDependencyId();
+  unsigned getRegionId();
+  unsigned getModuleId();
+  unsigned getRequestTime();
+  unsigned getExectionTime();
+  unsigned getDependencyId();
 
-	void printTokenDetails();
+  void printTokenDetails();
 
-	friend std::ostream& operator<<(std::ostream&, const traceToken*);
-	friend bool operator>(const traceToken &t1, const traceToken &t2);
+  friend std::ostream& operator<<(std::ostream&, const traceToken*);
+  friend bool operator>(const traceToken &t1, const traceToken &t2);
 };
 
 #endif

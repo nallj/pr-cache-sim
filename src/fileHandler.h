@@ -19,35 +19,35 @@ enum lineType { UNKNOWN, WHITE, COMMENT, PARAMETER, DATA, INVALID };
 
 class fileHandler{
 
-	bool is_valid_ = true;
+  bool is_valid_ = true;
 
-	std::vector<std::string> acceptable_params_;
-	std::vector<std::string> regex_args_;
-	std::vector< std::pair<lineType, std::string> > file_body_;
-	std::multimap<std::string, std::string> param_dictionary_;
+  std::vector<std::string> acceptable_params_;
+  std::vector<std::string> regex_args_;
+  std::vector< std::pair<lineType, std::string> > file_body_;
+  std::multimap<std::string, std::string> param_dictionary_;
 
 public:
-	std::string input_file_;
+  std::string input_file_;
 
-	// Constructors //
-	fileHandler();
-	fileHandler(std::string input);
-	fileHandler(std::string input, std::vector<std::string> accept);
-	fileHandler(std::string input, std::vector<std::string> accept, std::vector<std::string> regex);
+  // Constructors //
+  fileHandler();
+  fileHandler(std::string input);
+  fileHandler(std::string input, std::vector<std::string> accept);
+  fileHandler(std::string input, std::vector<std::string> accept, std::vector<std::string> regex);
 
-	// Operations Functions //
-	void deleteIfExists();
-	void parseContent(std::string fin);
-	void parseEntries(); // search for accepted parameters and regex matches for data body
-	void printEntries();
-	void addToFile(std::string line); // todo: needs line validation
-	std::pair<bool, unsigned long> findInFile(std::string line); // todo: not finished
-	bool removeFromFile(std::string line); // todo: not finished
+  // Operations Functions //
+  void deleteIfExists();
+  void parseContent(std::string fin);
+  void parseEntries(); // search for accepted parameters and regex matches for data body
+  void printEntries();
+  void addToFile(std::string line); // TODO: needs line validation
+  std::pair<bool, unsigned long> findInFile(std::string line); // TODO: not finished
+  bool removeFromFile(std::string line); // TODO: not finished
 
-	// Accessor Methods //
-	bool isFileValid();
-	std::multimap<std::string, std::string> getParams();
-	std::vector<std::string> getData();
+  // Accessor Methods //
+  bool isFileValid();
+  std::multimap<std::string, std::string> getParams();
+  std::vector<std::string> getData();
 };
 
 #endif

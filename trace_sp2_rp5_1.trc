@@ -1,25 +1,25 @@
 
-#	Example Trace File for Drachma
+#  Example Trace File for Drachma
 
 name: trace_sp2_rp5_1 (made-up traces for a made-up application)
 
 /#
-	all traces are of the following format:
-		<containing region ID>,
-		<module ID>,
-		<request time>,
-		<execution time>,
-		[dependency on trace ID]
+  all traces are of the following format:
+    <containing region ID>,
+    <module ID>,
+    <request time>,
+    <execution time>,
+    [dependency on trace ID]
 
-	the following are acceptable definitions.
-	descriptions with an astrisk* are required
-	
-		name: "trace collection name"*
+  the following are acceptable definitions.
+  descriptions with an astrisk* are required
+  
+    name: "trace collection name"*
 #/
 
 /#
-	Tools used to generate file:
-		Microsoft Excel
+  Tools used to generate file:
+    Microsoft Excel
 #/
 
 2,2,0,20,

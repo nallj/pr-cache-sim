@@ -1,233 +1,238 @@
 #include "icap.h"
 
 static const unsigned icapStateStalls[] = {
-	0, // ICAP_INIT
-	0, // ICAP_IDLE
-	0, // ICAP_WAIT
-	0, // ICAP_LOCK_PRR
-	0  // ICAP_TRANSFER
+  0, // ICAP_INIT
+  0, // ICAP_IDLE
+  0, // ICAP_WAIT
+  0, // ICAP_LOCK_PRR
+  0  // ICAP_TRANSFER
 };
 
 /* PUBLIC */
 
 icap::icap(double speed, unsigned bus_width) :
-	icap_speed_(speed),
-	icap_bus_width_(bus_width),
-	transferring_(false),
-	internal_timestep_(0),
-	next_state_(ICAP_INIT),
-	prc_ack_(false),
-	current_trace_(nullptr) { }
-	
+  icap_speed_(speed),
+  icap_bus_width_(bus_width),
+  transferring_(false),
+  internal_timestep_(0),
+  next_state_(ICAP_INIT),
+  prc_ack_(false),
+  current_trace_(nullptr) { }
+  
 icap::~icap() { };
 
 void icap::setRegionWidths(std::vector<unsigned> region_width) {
-	region_width_ = region_width;
+  region_width_ = region_width;
 }
 
 void icap::setSimulationSpeed(double sim_speed) {
-	sim_speed_ = sim_speed;
+  sim_speed_ = sim_speed;
 }
 
 void icap::connect(
-	std::vector<storageUnit*>* memory_hierarchy,
-	reconfigurableRegions* prrs,
-	std::deque<bool>* prr_executing,
-	traceToken** current_trace_ptr,
-	unsigned* prc_mc,
-	bool* prc_req,
-	bool* prr_ctrl_ack
+  std::vector<storageUnit*>* memory_hierarchy,
+  reconfigurableRegions* prrs,
+  std::deque<bool>* prr_executing,
+  traceToken** current_trace_ptr,
+  unsigned* prc_mc,
+  bool* prc_req,
+  bool* prr_ctrl_ack
 ) {
 
-	memory_hierarchy_ = memory_hierarchy;
+  memory_hierarchy_ = memory_hierarchy;
 
-	prrs_ = prrs;
-	prr_executing_ = prr_executing;
+  prrs_ = prrs;
+  prr_executing_ = prr_executing;
 
-	for (unsigned i = 0; i < prr_executing_->size(); i++)
-		prr_ctrl_req_.push_back(false);
+  for (unsigned i = 0; i < prr_executing_->size(); i++) {
+    prr_ctrl_req_.push_back(false);
+  }
 
-	current_trace_ptr_ = current_trace_ptr;
+  current_trace_ptr_ = current_trace_ptr;
 
-	prc_mc_ = prc_mc;
-	prc_req_ = prc_req;
-	prr_ctrl_ack_ = prr_ctrl_ack;
+  prc_mc_ = prc_mc;
+  prc_req_ = prc_req;
+  prr_ctrl_ack_ = prr_ctrl_ack;
 }
 
 void icap::step() {
 
-	std::cout << "ICAP: ";
+  std::cout << "ICAP: ";
 
-	// stalling helps the simulator more closely behave as hardware would.
-	if (stall_count_ != 0) {
-		stall_count_--;
-		std::cout << "stalling (" << stall_count_ << " left)...\n";
+  // stalling helps the simulator more closely behave as hardware would.
+  if (stall_count_ != 0) {
+    stall_count_--;
+    std::cout << "stalling (" << stall_count_ << " left)...\n";
 
-	} else {
+  } else {
 
-		// latch current state and associated stall count.
-		current_state_ = next_state_;
-		//stall_count_ = prcStateStalls[current_state_];
+    // latch current state and associated stall count.
+    current_state_ = next_state_;
+    //stall_count_ = prcStateStalls[current_state_];
 
-		// if the ICAP is ACKing because of a previous request but
-		// the request is complete, the ICAP should stop ACKing.
-		if (prc_ack_ && !*prc_req_) {
-			std::cout << "(turning off PRC_ACK now) ";
-			prc_ack_ = false;
-		}
+    // if the ICAP is ACKing because of a previous request but
+    // the request is complete, the ICAP should stop ACKing.
+    if (prc_ack_ && !*prc_req_) {
+      std::cout << "(turning off PRC_ACK now) ";
+      prc_ack_ = false;
+    }
 
 
-		unsigned region_id;
-		if (*current_trace_ptr_)
-			region_id = (*current_trace_ptr_)->getRegionId();
+    unsigned region_id;
+    if (*current_trace_ptr_) {
+      region_id = (*current_trace_ptr_)->getRegionId();
+    }
 
-		switch (current_state_) {
-			case ICAP_INIT:
-				std::cout << "passing INIT stage\n";
-				next_state_ = ICAP_IDLE;
-				break;
+    switch (current_state_) {
+      case ICAP_INIT:
+        std::cout << "passing INIT stage\n";
+        next_state_ = ICAP_IDLE;
+        break;
 
-			case ICAP_IDLE:
-				std::cout << "passing IDLE stage - ";
+      case ICAP_IDLE:
+        std::cout << "passing IDLE stage - ";
 
-				if (*prc_req_) {
-					std::cout << "received transfer request from PRC";
+        if (*prc_req_) {
+          std::cout << "received transfer request from PRC";
 
-					// need to wait for PRC to ack somehow. if the ICAP is significantly faster than the
-					// PRC the PRC may not notice the ack signal and it will become stuck indefinitely
-					prc_ack_ = true;
+          // need to wait for PRC to ack somehow. if the ICAP is significantly faster than the
+          // PRC the PRC may not notice the ack signal and it will become stuck indefinitely
+          prc_ack_ = true;
 
-					// latch the memory level holding the module found by the PRC
-					memory_counter_ = *prc_mc_;
+          // latch the memory level holding the module found by the PRC
+          memory_counter_ = *prc_mc_;
 
-					// save pointer to the current trace pointed at when the PRC made its' request
-					current_trace_ = *current_trace_ptr_;
+          // save  pointer to the current trace pointed at when the PRC made its' request
+          current_trace_ = *current_trace_ptr_;
 
-					std::cout << " (target is region ID# " << region_id
-								<< " and the module located @ ";
+          std::cout << " (target is region ID# " << region_id
+                << " and the module located @ ";
 
-					if (memory_counter_ + 1 == memory_hierarchy_->size())
-						std::cout << "MM).\n";
-					else
-						std::cout << "L" << memory_counter_ << ").\n";
+          if (memory_counter_ + 1 == memory_hierarchy_->size()) {
+            std::cout << "MM).\n";
+          } else {
+            std::cout << "L" << memory_counter_ << ").\n";
+          }
 
-					prr_ctrl_req_[region_id] = true;
+          prr_ctrl_req_[region_id] = true;
 
-					// transfer signal needs to be asserted here or when the PRR controller is moved
-					// into waiting for transfer completion (after it ACKs) the PRR controller will
-					// believe it is done transferring.
-					transferring_ = true;
+          // transfer signal needs to be asserted here or when the PRR controller is moved
+          // into waiting for transfer completion (after it ACKs) the PRR controller will
+          // believe it is done transferring.
+          transferring_ = true;
 
-					//if (prr_executing_->at(region_id))
-						next_state_ = ICAP_WAIT;
-					//else
-					//	next_state_ = ICAP_TRANSFER;
-				} else
-					std::cout << "idling.\n";
+          //if (prr_executing_->at(region_id))
+            next_state_ = ICAP_WAIT;
+          //else
+          //  next_state_ = ICAP_TRANSFER;
+        } else {
+          std::cout << "idling.\n";
+        }
 
-				break;
+        break;
 
-			case ICAP_WAIT:
-				std::cout << "passing WAIT stage";
+      case ICAP_WAIT:
+        std::cout << "passing WAIT stage";
 
-				region_id = current_trace_->getRegionId();
-				std::cout << " (target is region ID# " << region_id << ")";
+        region_id = current_trace_->getRegionId();
+        std::cout << " (target is region ID# " << region_id << ")";
 
-				//if (!prr_executing_->at(region_id)) {
-				if (*prr_ctrl_ack_) {
-					std::cout << " - PRR CTRL[" << region_id << "] accepts the transfer, BEGIN!\n";
+        //if (!prr_executing_->at(region_id)) {
+        if (*prr_ctrl_ack_) {
+          std::cout << " - PRR CTRL[" << region_id << "] accepts the transfer, BEGIN!\n";
 
-					prr_ctrl_req_[region_id] = false;
-					//next_state_ = ICAP_LOCK_PRR;
+          prr_ctrl_req_[region_id] = false;
+          //next_state_ = ICAP_LOCK_PRR;
 
-					transfer_latency_ = calculateTransferLatency(region_id);
+          transfer_latency_ = calculateTransferLatency(region_id);
 
-					std::cout << "\tIt will take '" << transfer_latency_
-								<< "' simulation cycles to complete the transfer...";
+          std::cout << "\tIt will take '" << transfer_latency_
+                << "' simulation cycles to complete the transfer...";
 
-					//transferring_ = true;
-					next_state_ = ICAP_TRANSFER;
-				}
-				std::cout << "\n";
+          //transferring_ = true;
+          next_state_ = ICAP_TRANSFER;
+        }
+        std::cout << "\n";
 
-				// if (target PRR is idle)
-					// next_state_ = ICAP_TRANSFER;
+        // if (target PRR is idle)
+          // next_state_ = ICAP_TRANSFER;
 
-				break;
+        break;
 
-			case ICAP_TRANSFER:
-				std::cout << "passing TRANSFER stage ";
+      case ICAP_TRANSFER:
+        std::cout << "passing TRANSFER stage ";
 
-				if (transfer_latency_-- == 0) {
-					std::cout << "and has just FINISHED the transfer.\n";
+        if (transfer_latency_-- == 0) {
+          std::cout << "and has just FINISHED the transfer.\n";
 
-					transferring_ = false;
-					next_state_ = ICAP_IDLE;
-				} else
-					std::cout << "(" << transfer_latency_ << " sim cycles remain).\n";
+          transferring_ = false;
+          next_state_ = ICAP_IDLE;
+        } else {
+          std::cout << "(" << transfer_latency_ << " sim cycles remain).\n";
+        }
 
-				break;
+        break;
 
-			default:
-				std::cout << "ERROR: ICAP is in an UNKNOWN STATE!\n";
-		}
-	}
+      default:
+        std::cout << "ERROR: ICAP is in an UNKNOWN STATE!\n";
+    }
+  }
 
 }
 
 //bool transferBeginning() { return transferring_ && internal_timestep_ == 0; }
 bool icap::transferFinished() {
-	return transferring_ && internal_timestep_ >= transfer_latency_;
+  return transferring_ && internal_timestep_ >= transfer_latency_;
 }
 
 // ICAP_MC
 // getter function used by the signal context to retrieve signals
 unsigned* icap::accessCounterSignal(icapSignal signal) {
-	switch (signal) {
-		case ICAP_MC:
-			return &memory_counter_;
+  switch (signal) {
+    case ICAP_MC:
+      return &memory_counter_;
 
-		default:
-			return nullptr;
-	}
+    default:
+      return nullptr;
+  }
 }
 
 // ICAP_PRC_ACK, ICAP_TRANSFER
 // getter function used by the signal context to retrieve signals
 bool* icap::accessSignal(icapSignal signal) {
-	switch (signal) {
-		case ICAP_PRC_ACK:
-			return &prc_ack_;
+  switch (signal) {
+    case ICAP_PRC_ACK:
+      return &prc_ack_;
 
-		case ICAP_TRANSFER_PRR:
-			return &transferring_;
+    case ICAP_TRANSFER_PRR:
+      return &transferring_;
 
-		default:
-			return nullptr;
-	}
+    default:
+      return nullptr;
+  }
 }
 
 // ICAP_PRR_REQ
 // getter function used by the signal context to retrieve signal buses
 std::deque<bool>* icap::accessSignalBus(icapSignal signal) {
-	switch (signal) {
-		case ICAP_PRR_REQ:
-			return &prr_ctrl_req_;
+  switch (signal) {
+    case ICAP_PRR_REQ:
+      return &prr_ctrl_req_;
 
-		default:
-			return nullptr;
-	}
+    default:
+      return nullptr;
+  }
 }
 
 traceToken** icap::accessTrace() {
-	return &current_trace_;
+  return &current_trace_;
 }
 
 /* PRIVATE */
 
 unsigned icap::calculateTransferLatency(unsigned region_id) {
-	unsigned region_size = region_width_[region_id];
+  unsigned region_size = region_width_[region_id];
 
-	// [(64 * 8 * 200) / (32 * 100)] = 32
-	return (region_size * 8 * icap_speed_) / (icap_bus_width_ * sim_speed_);
+  // [(64 * 8 * 200) / (32 * 100)] = 32
+  return (region_size * 8 * icap_speed_) / (icap_bus_width_ * sim_speed_);
 }

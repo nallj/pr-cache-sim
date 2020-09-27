@@ -9,47 +9,47 @@
 
 class application {
 
-	icap* application_icap_;
-	prc* application_prc_;
+  icap* application_icap_;
+  prc* application_prc_;
 
-	double simulator_speed_;
-	double static_region_speed_;
+  double simulator_speed_;
+  double static_region_speed_;
 
-	std::multimap<unsigned, unsigned>* static_modules_;
-	std::multimap<unsigned, std::pair<unsigned, std::vector<double>>>* reconfigurable_modules_;
+  std::multimap<unsigned, unsigned>* static_modules_;
+  std::multimap<unsigned, std::pair<unsigned, std::vector<double>>>* reconfigurable_modules_;
 
 public:
-	std::string name_;
-	std::string file_;
+  std::string name_;
+  std::string file_;
 
-	application();
-	application(
-		icap* application_icap,
-		prc* application_prc,
-		double static_region_speed,
-		std::multimap<unsigned, unsigned>* static_modules,
-		std::multimap<unsigned, std::pair<unsigned, std::vector<double>>>* reconfigurable_modules,
-		double fastest_module_speed
-	);
-	~application();
+  application();
+  application(
+    icap* application_icap,
+    prc* application_prc,
+    double static_region_speed,
+    std::multimap<unsigned, unsigned>* static_modules,
+    std::multimap<unsigned, std::pair<unsigned, std::vector<double>>>* reconfigurable_modules,
+    double fastest_module_speed
+  );
+  ~application();
 
 
-	void printApplicationDetails();
+  void printApplicationDetails();
 
-	icap* getIcap();
-	prc* getPrc();
+  icap* getIcap();
+  prc* getPrc();
 
-	double getSimulatorSpeed();
-	unsigned getStaticRegionCount();
-	double getStaticRegionSpeed();
-	std::multimap<unsigned, unsigned>* getStaticModules();
-	unsigned getReconfigurableRegionCount();
-	unsigned getReconfigurableRegionBitstreamSize(unsigned region_id);
-	std::vector<unsigned> getReconfigurableRegionBitstreamSizes();
-	double getReconfigurableRegionSpeed(unsigned region_id, unsigned module_id);
-	std::multimap<unsigned, std::pair<unsigned, std::vector<double>>>* getReconfigurableModules();
+  double getSimulatorSpeed();
+  unsigned getStaticRegionCount();
+  double getStaticRegionSpeed();
+  std::multimap<unsigned, unsigned>* getStaticModules();
+  unsigned getReconfigurableRegionCount();
+  unsigned getReconfigurableRegionBitstreamSize(unsigned region_id);
+  std::vector<unsigned> getReconfigurableRegionBitstreamSizes();
+  double getReconfigurableRegionSpeed(unsigned region_id, unsigned module_id);
+  std::multimap<unsigned, std::pair<unsigned, std::vector<double>>>* getReconfigurableModules();
 
-	void printDetails(unsigned indents);
+  void printDetails(unsigned indents);
 };
 
 #endif

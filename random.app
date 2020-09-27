@@ -1,44 +1,44 @@
 
-#	Example Application File for Drachma
+#  Example Application File for Drachma
 
 name: Random Application (a made-up application)
 
 /#
-	this is where you would put defining parameters
-	to describe traits of an application's resource
-	partitioning.
+  this is where you would put defining parameters
+  to describe traits of an application's resource
+  partitioning.
 
-	all paramters are of the following format:
-		<param name>: <param value>
+  all paramters are of the following format:
+    <param name>: <param value>
 
-	the following are acceptable definitions.
-	descriptions with a double astrisk** are always required.
-	descriptions with an asterisk* are required under certain circumstance
-		
-		name: "name of the application"**
+  the following are acceptable definitions.
+  descriptions with a double astrisk** are always required.
+  descriptions with an asterisk* are required under certain circumstance
+    
+    name: "name of the application"**
 
-		icap speed: "the speed in MHz of the ICAP"**
-		icap width: "the number of bits the ICAP can
-			transfer per clock cycle (at ICAP speed)"**
+    icap speed: "the speed in MHz of the ICAP"**
+    icap width: "the number of bits the ICAP can
+      transfer per clock cycle (at ICAP speed)"**
 
-		prc speed: "the speed in MHz of the Partial
-			Reconfiguration Controller"**
+    prc speed: "the speed in MHz of the Partial
+      Reconfiguration Controller"**
 
-		static region speed: "the speed in MHz of the static
-			regions"*
-			> required if declaring static regions
-		srX module count: "amount of modules residing
-			in the static region X (where X <= 0)"
-			there can be an arbitrary amount of SRs
-			static regions
+    static region speed: "the speed in MHz of the static
+      regions"*
+      > required if declaring static regions
+    srX module count: "amount of modules residing
+      in the static region X (where X <= 0)"
+      there can be an arbitrary amount of SRs
+      static regions
 
-		rrX bitstream size: "amount of bytes required
-			from the ICAP to reconfigure the
-			reconfigurable region X (where X <= 0)"
-			there can be an arbitrary amount of RRs
-		rrX module Y speed: "the speed (in MHz) of module
-			Y from reconfigurable region X"
-			there can be an arbitrary amount of RMs per RR
+    rrX bitstream size: "amount of bytes required
+      from the ICAP to reconfigure the
+      reconfigurable region X (where X <= 0)"
+      there can be an arbitrary amount of RRs
+    rrX module Y speed: "the speed (in MHz) of module
+      Y from reconfigurable region X"
+      there can be an arbitrary amount of RMs per RR
 #/
 
 icap speed: 100.00

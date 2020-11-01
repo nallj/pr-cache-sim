@@ -1,14 +1,14 @@
-#ifndef _REPL_ALG_
-#define _REPL_ALG_
+#ifndef NALLJ_DRACHMA_REPL_ALG
+#define NALLJ_DRACHMA_REPL_ALG
 
 #include <iostream>
 #include <string>
 #include <vector>
 #include <utility>
 
-class replAlg{
+class replAlg {
 protected:
-  std::vector< std::pair<int, unsigned> > tag_table_;
+  std::vector<std::pair<int, unsigned>> tag_table_;
   unsigned max_table_size_;
 
   replAlg(std::string name, unsigned max_size);

@@ -1,19 +1,18 @@
 
-#  Example Application File for Drachma
+# Example Application File for Drachma
 
 name: Random Application (a made-up application)
 
 /#
-  this is where you would put defining parameters
-  to describe traits of an application's resource
-  partitioning.
+  This is where you would put defining parameters to describe the resource partitioning of an
+  application.
 
-  all paramters are of the following format:
+  All paramters are of the following format:
     <param name>: <param value>
 
-  the following are acceptable definitions.
-  descriptions with a double astrisk** are always required.
-  descriptions with an asterisk* are required under certain circumstance
+  The following are acceptable definitions. Descriptions with a double astrisk are always required.
+  Descriptions with a single asterisk are required under certain circumstance; they are followed
+  by the condition under which it is required.
     
     name: "name of the application"**
 
@@ -23,6 +22,31 @@ name: Random Application (a made-up application)
 
     prc speed: "the speed in MHz of the Partial
       Reconfiguration Controller"**
+    
+    [TODO] task scheduling:
+     - fcfs (first come first serve)
+      * no jobs: schedule first
+      * jobs going 
+     - sjn (shortest job next): naive
+      * no jobs: schedule first
+      * 4 jobs, 2 in contention
+     - sjn (shortest job next): schedule contentious first
+      * no jobs: schedule first
+      * 4 jobs, 2 in contention
+     - priority - requires that metadata has priortiy within them.
+
+     - rr (round-robin) - doesn't make sense since this is for scheduling tasks on a single core; it is not trivial to 
+     - "Weighted shortest job first" (WSJF) - too complicated of a scheduling algorithm to implement; jobs get weighted with the cost of delay so that the highest valued jobs get done sooner.
+     - shortest remaining time first (SRTF) - cant be done because it requires preemption
+
+    [TODO] prr selection policy:
+      - lowest flexibility (LF): choose the PRR that can support the least bitstreams leaving the more
+        flexible PRR free
+      * what about selection policies that take into account cache? a lower cost than pulling fresh is pulling from cache
+      * what about a task that can be done by two different implementations (2 diff bitstreams)
+
+    // TODO: probably not worth the time to develop; yeah, don't develop this
+    task scheduling equivalence bias: left/right (when tasks are otherwise completely equivalent)
 
     static region speed: "the speed in MHz of the static
       regions"*
@@ -46,6 +70,9 @@ icap width: 32
 
 prc speed: 100.00
 
+task scheduling: fcfs
+prr selection policy: lf
+
 static region speed: 100.00
 sr0 module count: 2
 sr1 module count: 1
@@ -53,6 +80,9 @@ sr1 module count: 1
 # rr0 bitstream size: 1024
 rr0 bitstream size: 64
 rr0 module 0 speed: 100.00
+
+#rr0 module 0 tasks: task_0
+
 rr0 module 1 speed: 100.00
 rr0 module 2 speed: 100.00
 rr0 module 3 speed: 100.00

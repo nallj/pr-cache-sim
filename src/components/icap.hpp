@@ -1,11 +1,12 @@
-#ifndef ICAP
-#define ICAP
+#ifndef NALLJ_DRACHMA_ICAP
+#define NALLJ_DRACHMA_ICAP
 
 #include <iostream>
 #include <queue>
 #include <vector>
 #include <functional>
 #include <deque>
+#include <unordered_map> // unordered_map
 
 #include "../globals.hpp"
 #include "../traceToken.hpp"
@@ -17,7 +18,7 @@ enum icapState { ICAP_INIT, ICAP_IDLE, ICAP_WAIT, ICAP_LOCK_PRR, ICAP_TRANSFER }
 class icap {
   double icap_speed_;
   unsigned icap_bus_width_;
-  std::vector<unsigned> region_width_;
+  std::unordered_map<unsigned, unsigned> region_width_;
   double sim_speed_;
 
   // priority queue for active programming requests
@@ -53,7 +54,7 @@ public:
   icap(double speed, unsigned bus_width);
   ~icap();
 
-  void setRegionWidths(std::vector<unsigned> region_width);
+  void setRegionWidths(std::unordered_map<unsigned, unsigned> region_width);
   void setSimulationSpeed(double sim_speed);
 
   void connect(

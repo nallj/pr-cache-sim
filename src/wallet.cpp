@@ -1,166 +1,75 @@
 #include "wallet.hpp"
 
-/* PUBLIC */
-
 wallet::wallet() {
+  wallet_file_handler_ = fileHandler("wallet.wal", wallet_params_);
 
-  wallet_handler_ = fileHandler("wallet.wal", wallet_params_);
+  if (wallet_file_handler_.isFileValid()) {
+    const auto wallet_contents = wallet_file_handler_.getParams();
 
-  if (wallet_handler_.isFileValid()) {
-    auto wallet_contents = wallet_handler_.getParams();
+    for (const auto& file_data : wallet_contents) {
 
-    for (auto it = wallet_contents.begin(); it != wallet_contents.end(); ++it) {
+      const auto file_type = file_data.first[0];
+      const auto filename = file_data.second;
 
-      std::string next[] = { it->first, it->second };
+      switch (file_type) {
+        // Read in the memory file.
+        case 'm': {
+          assertEntityFileExists(filename, "Memory");
 
-      /*if (next[0].substr(0, 1) == "d") { // read in device file
+          const auto new_mem = buildMemoryHierarchy(filename);
+          memories_.push_back(new_mem);
+          break;
+        }
+        // Read in the application file.
+        case 'a': {
+          assertEntityFileExists(filename, "Application");
 
-        std::vector<std::string> dev_params {"family", "model", "slices"};
-        fileHandler dev_reader = fileHandler(next[1], dev_params);
+          const auto new_app = createApplication(filename);
+          applications_.push_back(new_app);
+          break;
+        }
+        // Read in task graph file.
+        case 't': {
+          assertEntityFileExists(filename, "Task graph");
 
-        device new_dev = device(dev_reader);
-        devices_.push_back(new_dev);
-
-      } else*/
-      if (next[0].substr(0, 1) == "m") { // read in memory file
-
-        auto new_mem = buildMemoryHierarchy(next[1]);
-        memories_.push_back(new_mem);
-
-      } else if (next[0].substr(0, 1) == "a") { // read in application file
-
-        auto new_app = createApplication(next[1]);
-        applications_.push_back(new_app);
-
-      } else if (next[0].substr(0, 1) == "t") { // trace file list
-
-        auto new_trace = createTraceFilePair(next[1]);
-        trace_files_.push_back(new_trace);
+          auto new_tg = createTaskGraph(filename);
+          task_graphs_files_.push_back({ filename, std::move(new_tg) });
+          break;
+        }
       }
     }
 
   } else {
-    std::cout << "\n\nERROR: BAD WALLET FILE!\n\n";
-    throw;
+    throw userError("Wallet file provided has invalid format.");
   }
 }
 
+void wallet::addApplication(std::string filename) {
+  wallet_file_handler_.addToFile("a: " + filename);
+}
 
-void wallet::printDetails() {
+void wallet::addMemory(std::string filename) {
+  wallet_file_handler_.addToFile("m: " + filename);
+}
 
-  /*std::cout << "The wallet contains " << devices_.size() << " devices, "
-        << memories_.size() << " memories, and " << trace_files_.size() << " trace files.\n";
+void wallet::addTraceFile(std::string filename) {
+  wallet_file_handler_.addToFile("t: " + filename);
+}
 
-  std::cout << "\n\t== DEVICE LIST (with ID): == \n";
-  for (int i = 0; i < devices_.size(); i++)
-    std::cout << "\t\t" << i << ") '" << devices_[i].name_ << "' <" << devices_[i].file_ << ">\n";*/
-
-  std::cout << "The wallet contains " << memories_.size() << " memory configurations, "
-        << applications_.size() << " applications, and " << trace_files_.size() << " trace files.\n";
-
-  std::cout << "\n\n\t== MEMORY LIST (with ID): ==\n";
-  for (auto i = 0; i < memories_.size(); i++) {
-
-    std::cout << "\t\t" << i << ") '" << memories_[i].name_ << "' <" << memories_[i].file_ << ">\n";
-
-    storageUnit* ptr = &(memories_[i]);
-    while (ptr) {
-      ptr->printDetails();
-      ptr = ptr->getChild();
-    }
-
-    std::cout << "\n";
+void wallet::assertEntityFileExists(std::string filename, std::string entity_name) {
+  auto file_exists = access(filename.c_str(), F_OK) != -1;
+  if (!file_exists) {
+    const auto msg = entity_name + " file referenced in wallet (" + filename + ") does not exist.";
+    throw userError(msg);
   }
-
-  std::cout << "\n\t== APPLICATION LIST (with ID): ==\n";
-  for (auto i = 0; i < applications_.size(); i++) {
-    std::cout << "\t\t" << i << ") '" << applications_[i]->name_ << "' <" << applications_[i]->file_ << ">\n";
-    applications_[i]->printDetails(3);
-  }
-
-
-  std::cout << "\n\n\t== TRACE FILE LIST (with ID): ==\n";
-  for (auto i = 0; i < trace_files_.size(); i++) {
-    std::cout << "\t\t" << i << ") '" << trace_files_[i]->second << "' <" << trace_files_[i]->first << ">\n";
-  }
-
-  std::cout << std::endl;
 }
-
-void wallet::addMemory(std::string file_name) {
-  wallet_handler_.addToFile("m: " + file_name);
-}
-
-bool wallet::removeMemory(std::string file_name) {
-  return wallet_handler_.removeFromFile("m: " + file_name);
-}
-
-void wallet::addApplication(std::string file_name) {
-  wallet_handler_.addToFile("a: " + file_name);
-}
-
-bool wallet::removeApplication(std::string file_name) {
-  return wallet_handler_.removeFromFile("a: " + file_name);
-}
-
-void wallet::addTraceFile(std::string file_name) {
-  wallet_handler_.addToFile("t: " + file_name);
-}
-
-bool wallet::removeTraceFile(std::string file_name) {
-  return wallet_handler_.removeFromFile("t: " + file_name);
-}
-
-std::vector<std::string> wallet::getMemoryParamRules() {
-  return memory_params_;
-}
-
-std::vector<std::string> wallet::getMemoryRegexRules() {
-  return memory_regex_;
-}
-
-std::vector<std::string> wallet::getApplicationParamRules() {
-  return application_params_;
-}
-
-std::vector<std::string> wallet::getApplicationRegexRules() {
-  return application_regex_;
-}
-
-std::vector<std::string> wallet::getTraceParamRules() {
-  return trace_params_;
-}
-
-std::vector<std::string> wallet::getTraceRegexRules() {
-  return trace_regex_;
-}
-
-
-reconfigurableRegions wallet::getMemory(unsigned memory_id) {
-//std::string wallet::getMemory(unsigned memory_id) {
-  return memories_[memory_id];
-}
-
-application* wallet::getApplication(unsigned application_id) {
-  return applications_[application_id];
-}
-
-std::vector<std::string> wallet::getTraceFile(unsigned trace_id) {
-  auto trace_reader = fileHandler(trace_files_[trace_id]->first, trace_params_, trace_regex_);
-
-  return trace_reader.getData();
-}
-
-
-/* PRIVATE */
 
 reconfigurableRegions wallet::buildMemoryHierarchy(std::string memory_file) {
 
   auto memory_reader = fileHandler(memory_file, memory_params_, memory_regex_);
 
   if (!memory_reader.isFileValid()) {
-    std::cout << "\n\nMEMORY FILE IS CORRUPT!!!\n\n";
-    throw;
+    throw userError("Memory file is corrupt.");
   }
 
   // start by retrieving the information needed to form the main menu and pr regions
@@ -186,9 +95,6 @@ reconfigurableRegions wallet::buildMemoryHierarchy(std::string memory_file) {
     } else if (next[0] == "main search latency") { // read in main memory search latency (in CCs)
       main_mem_search = next[1];
     }
-
-    //else if (next[0] == "rcr count") // read in amount of reconfigurable regions
-    //  prr_count = next[1];
   }
 
   // initialize the highest memory level, the pr regions
@@ -204,11 +110,6 @@ reconfigurableRegions wallet::buildMemoryHierarchy(std::string memory_file) {
     (unsigned short) std::stol(main_mem_search)
   );
   main_memory->name_ = main_mem_name;
-
-  // initialize main memory's modules
-  //for (unsigned i = 0; i < std::stol(main_mem_size); i++)
-  //  main_memory->insertModule( new module(i, 777) );
-      // TODO: bitstream width is arbitrary since it is not yet considered in Drachma
 
   // create interstitial levels (up to L9) of cache based on data parameters
   auto level_params = memory_reader.getData();
@@ -287,41 +188,96 @@ reconfigurableRegions wallet::buildMemoryHierarchy(std::string memory_file) {
   return prr;
 }
 
+bool stringContains(const std::string& s, const std::string& substr) {
+  return s.find(substr) != std::string::npos;
+}
+
+std::string getParamFromMap(const std::multimap<std::string, std::string> map, const char* key) {
+  const auto find_it = map.find(key);
+  if (find_it == map.end()) {
+    throw std::runtime_error("Expected value not found in map.");
+  }
+  return find_it->second;
+}
+
+long getModuleIdFromAppParamLine(const std::string& param) {
+  const auto start = param.find("module ") + 7;
+  const auto end = param.find(" ", start);
+  const auto module_id = param.substr(start, end - start);
+  return std::stol(module_id);;
+}
+
+long getRrIdFromAppParamLine(const std::string& param) {
+  const auto end = param.find(" ");
+  const auto rr_id = param.substr(2, end - 2);
+  return std::stol(rr_id);
+}
+
+long getSrIdFromAppParamLine(const std::string& param) {
+  const auto end = param.find(" ");
+  const auto sr_id = param.substr(2, end - 2);
+  return std::stol(sr_id);
+}
+
+void pushCommaDelimitedElements(std::vector<std::string>& list, const std::string str) {
+  auto ss = std::stringstream(str);
+  while (ss.good()) {
+    std::string element;
+    std::getline(ss, element, ',');
+
+    boost::trim(element);
+    list.push_back(element);
+  }
+}
+
 application* wallet::createApplication(std::string application_file) {
 
   auto application_reader = fileHandler(application_file, application_params_, application_regex_);
 
   if (!application_reader.isFileValid()) {
-    std::cout << "\n\nAPPLICATION FILE IS CORRUPT!!!\n\n";
-    throw;
+    throw userError("Application file is corrupt.");
   }
 
   // start by retrieving the basic application parameters
   auto statically_defined_params = application_reader.getParams();
 
-  // get the application's name
-  auto application_name = statically_defined_params.find("name")->second;
+  // Get ICAP-related parameters.
+  const auto icap_speed = std::stod(getParamFromMap(statically_defined_params, "icap speed"));
+  const auto icap_width = std::stol(getParamFromMap(statically_defined_params, "icap width"));
 
-  // get icap speed and bus width, then instantiate the icap
-  auto icap_speed = statically_defined_params.find("icap speed")->second;
-  auto icap_width = statically_defined_params.find("icap width")->second;
-  auto application_icap = new icap(std::stod(icap_speed), std::stol(icap_width));
+  auto application_icap = std::make_unique<icap>(icap_speed, icap_width);
 
-  // get prc speed, then instantiate the prc
-  auto prc_speed = statically_defined_params.find("prc speed")->second;
-  auto application_prc = new prc(std::stod(prc_speed));
+  // Get all PRC-related parameters.
+  const auto prc_speed = std::stod(getParamFromMap(statically_defined_params, "prc speed"));
+  const auto task_scheduling_type = getParamFromMap(statically_defined_params, "task scheduling");
+  const auto prr_scheduling_alg_type = getParamFromMap(
+    statically_defined_params,
+    "prr selection policy"
+  );
+
+  // Get appropriate types for some of the PRC-related parameters.
+  const auto task_scheduling_alg = getTaskSchedulingAlgType(task_scheduling_type);
+  const auto prr_scheduling_alg = getPrrSchedulingPolicyType(prr_scheduling_alg_type);
+
+  auto application_prc = std::make_unique<prc>(prc_speed, task_scheduling_alg, prr_scheduling_alg);
 
   // get static region speed, if a static region has been defined
   std::string static_region_speed = "";
+  auto sr_speed_specified = false;
+
   if (statically_defined_params.find("static region speed") != statically_defined_params.end()) {
-    static_region_speed = statically_defined_params.find("static region speed")->second;
+    static_region_speed = getParamFromMap(statically_defined_params, "static region speed");
+    sr_speed_specified = true;
   }
 
   // speed of fastest module dictates the speed of the simulator. start search with static region.
   auto fastest_module_speed = std::stod(static_region_speed);
 
   auto static_modules = new std::multimap<unsigned, unsigned>();
-  auto reconfigurable_modules = new std::multimap<unsigned, std::pair<unsigned, std::vector<double>>>();
+
+  rrSpecMap_t rr_spec_map;
+  std::unordered_map<unsigned, unsigned> rr_bitstream_sizes;
+  std::unordered_map<unsigned, bool> rr_bitstream_size_set;
 
   // start parsing the arbitrary amounts of static and reconfigurable regions
   auto dynamically_declared_params = application_reader.getData();
@@ -329,99 +285,208 @@ application* wallet::createApplication(std::string application_file) {
     //std::cout << dynamically_declared_params[i] << "\n";
 
     // get the parameter and the corresponding argument
-    auto param = dynamically_declared_params[i].substr(0, dynamically_declared_params[i].find(":"));
-    auto arg = dynamically_declared_params[i].substr(dynamically_declared_params[i].find(":") + 2);
+    const auto param = dynamically_declared_params[i].substr(0, dynamically_declared_params[i].find(":"));
+    const auto arg = dynamically_declared_params[i].substr(dynamically_declared_params[i].find(":") + 2);
 
     //std::cout << "> " << param << ", " << arg << "\n\n";
 
     // handle static region parameters
     if (param.substr(0, 2) == "sr") {
-      unsigned region_id_end_index = param.find(" ");
-      auto region_id = param.substr(2, region_id_end_index - 2);
-
-      static_modules->insert(std::pair<unsigned, unsigned>(std::stol(region_id), std::stol(arg)));
+      if (!sr_speed_specified) {
+        throw userError("Static regions specified without speed.");
+      }
+      const auto sr_id = getSrIdFromAppParamLine(param);
+      static_modules->emplace(sr_id, std::stol(arg));
     }
 
-    // handle reconfigurable region parameters
+    // Handle reconfigurable region parameters.
     if (param.substr(0, 2) == "rr") {
-      unsigned region_id_end_index = param.find(" ");
-      auto region_id = std::stol(param.substr(2, region_id_end_index - 2));
+      const auto rr_id = getRrIdFromAppParamLine(param);
 
-      // get reconfigurable region bitstream size
-      if (param.substr(region_id_end_index + 1, 3) == "bit") {
-        std::pair<unsigned, std::vector<double>> new_region_params;
-        new_region_params.first = std::stol(arg);
-
-        auto new_region
-          = std::pair<unsigned, std::pair<unsigned, std::vector<double>>>(region_id, new_region_params);
-        reconfigurable_modules->insert(new_region);
-
-      // get module speed
+      // Bitstream size; it's the only RR parameter that isn't module specific.
+      if (stringContains(param, "bitstream")) {
+        rr_bitstream_sizes[rr_id] = std::stoul(arg);
+        rr_bitstream_size_set[rr_id] = true;
+  
+      // Module-related parameters.
       } else {
-        auto region_it = reconfigurable_modules->find(region_id);
+        const auto module_id = getModuleIdFromAppParamLine(param);
+        auto& module_spec_map = rr_spec_map[rr_id];
+        auto& module_spec = module_spec_map[module_id];
 
-        unsigned module_id_start_index = param.find("module") + 7;
-        unsigned module_id_end_index = param.find(" ", module_id_start_index);
-        auto module_id = param.substr(module_id_start_index, module_id_end_index - module_id_start_index);
+        // These will be assigned multiple times, but it's cheaper than branching.
+        module_spec.region_id = rr_id;
+        module_spec.id = module_id;
 
-        //(region_it->second)[std::stol(module_id)] = std::stod(arg);
-        region_it->second.second.emplace(region_it->second.second.begin() + std::stol(module_id), std::stod(arg));
+        if (stringContains(param, "speed")) {
+          const auto module_speed = std::stod(arg);
 
-        // continue search for the fastest module.
-        if (std::stod(arg) > fastest_module_speed) {
-          fastest_module_speed = std::stod(arg);
+          module_spec.speed = module_speed;
+
+          // Keep record of the fastest module.
+          if (module_speed > fastest_module_speed) {
+            fastest_module_speed = module_speed;
+          }
+        // Module tasks
+        } else if (stringContains(param, "tasks")) {
+          pushCommaDelimitedElements(module_spec.task_ids, arg);
+        
+        // Something went wrong.
+        } else {
+          throw std::runtime_error("Unkown application parameter passed.");
         }
       }
     }
-
   }
 
+  // Loop over the modules and assign their bitstream sizes.
+  for (auto& rr_entry : rr_spec_map) {
+    const auto rr_id = rr_entry.first;
 
-  ////////// STARTING OF PRINT CODE
-
-  /*std::multimap<unsigned, unsigned>::iterator static_it;
-  std::cout << "There are " << static_modules.size() << " static regions, all operating at a speed of "
-        << static_region_speed << " MHz\n";
-  for (static_it = static_modules.begin(); static_it != static_modules.end(); static_it++)
-    std::cout << "> Static Region " << static_it->first << " has " << static_it->second << " modules.\n";
-
-  std::multimap<unsigned, std::pair<unsigned, std::vector<double>>>::iterator reconfig_it;
-  for (reconfig_it = reconfigurable_modules.begin(); reconfig_it != reconfigurable_modules.end(); reconfig_it++) {
-    std::cout << "\nReconfigurable Region " << reconfig_it->first << " has a bitstream size of "
-          << reconfig_it->second.first << " kB.\n";
-
-    for (unsigned it = 0; it < reconfig_it->second.second.size(); it++) {
-      std::cout << "> Reconfigurable Module " << reconfig_it->first << "." << it
-            << " operates at a speed of " << reconfig_it->second.second[it] << " MHz.\n";
+    // Asset that the bitstream size has been set for this RR.
+    if (!rr_bitstream_size_set[rr_id]) {
+      const auto msg = "No bitstream size specified for RR " + std::to_string(rr_id);
+      throw userError(msg);
     }
-  }*/
-  ///////// END OF PRINT CODE
+
+    for (auto& module_entry : rr_entry.second) {
+      const auto module_id = module_entry.first;
+      auto& module_spec = module_entry.second;
+
+      const auto module_bitstream_size = rr_bitstream_sizes[rr_id];
+      module_spec.bitstream_width = module_bitstream_size;
+    }
+  }
 
   auto new_app = new application(
     application_icap,
     application_prc,
     std::stod(static_region_speed),
     static_modules,
-    reconfigurable_modules,
+    rr_spec_map,
     fastest_module_speed
   );
-
-  new_app->name_ = application_name;
+  new_app->name_ = getParamFromMap(statically_defined_params, "name");
   new_app->file_ = application_file;
-  //new_app->hello();
 
   return new_app;
 }
 
-std::pair<std::string, std::string>* wallet::createTraceFilePair(std::string trace_file) {
+graph_ptr_t wallet::createTaskGraph(std::string tg_file) {
+  nallj::deserializer d;
+  auto input_stream = std::ifstream(tg_file);
+  auto graph = d.getGraph(input_stream);
+  return std::make_shared<nallj::graph>(graph);
+}
 
-  auto trace_reader = fileHandler(trace_file, trace_params_, trace_regex_);
+application* wallet::getApplication(unsigned application_id) {
+  if (applications_.size() - 1 < application_id) {
+    throw userError("Too large of an application ID was specified.");
+  }
+  return applications_[application_id];
+}
 
-  if (!trace_reader.isFileValid()) {
-    std::cout << "\n\nTRACE FILE IS CORRUPT!!!\n\n";
-    throw;
+std::vector<std::string> wallet::getApplicationParamRules() {
+  return application_params_;
+}
+
+std::vector<std::string> wallet::getApplicationRegexRules() {
+  return application_regex_;
+}
+
+reconfigurableRegions wallet::getMemory(unsigned memory_id) {
+  if (memories_.size() - 1 < memory_id) {
+    throw userError("Too large of a memory ID was specified.");
+  }
+  return memories_[memory_id];
+}
+
+std::vector<std::string> wallet::getMemoryParamRules() {
+  return memory_params_;
+}
+
+std::vector<std::string> wallet::getMemoryRegexRules() {
+  return memory_regex_;
+}
+
+prrSelectionPolicyType wallet::getPrrSchedulingPolicyType(std::string str) {
+  if (str == "lf") {
+    return LF;
+  }
+  throw userError("Invalid PRR scheduling algorithm specified.");
+}
+
+schedulingAlgType wallet::getTaskSchedulingAlgType(std::string str) {
+  if (str == "fcfs") {
+    return FCFS;
+  }
+  throw userError("Invalid task scheduling algorithm specified.");
+}
+
+graph_ptr_t wallet::getTaskGraph(unsigned task_graph_id) {
+  if (task_graphs_files_.size() - 1 < task_graph_id) {
+    throw userError("Too large of a task graph ID was specified.");
+  }
+  return task_graphs_files_[task_graph_id].second;
+}
+
+std::vector<std::string> wallet::getTraceParamRules() {
+  return trace_params_;
+}
+
+std::vector<std::string> wallet::getTraceRegexRules() {
+  return trace_regex_;
+}
+
+void wallet::printDetails() {
+  std::cout << "The wallet contains " << memories_.size() << " memory configurations, "
+    << applications_.size() << " applications, and " << task_graphs_files_.size()
+    << " task graph files.\n";
+
+  std::cout << "\n\t== MEMORY LIST (with ID): ==\n";
+  for (auto i = 0; i < memories_.size(); i++) {
+
+    std::cout << "\t\t" << i << ") '" << memories_[i].name_ << "' <" << memories_[i].file_ << ">\n";
+
+    storageUnit* ptr = &(memories_[i]);
+    while (ptr) {
+      ptr->printDetails();
+      ptr = ptr->getChild();
+    }
+
+    std::cout << "\n";
   }
 
-  auto trace_name = trace_reader.getParams().find("name")->second;
-  return new std::pair<std::string, std::string>(trace_file, trace_name);
+  std::cout << "\n\t== APPLICATION LIST (with ID): ==\n";
+  for (auto i = 0; i < applications_.size(); i++) {
+    std::cout << "\t\t" << i << ") '" << applications_[i]->name_ << "' <" << applications_[i]->file_ << ">\n";
+    applications_[i]->printDetails(3);
+  }
+
+  std::cout << "\n\t== TASK GRAPH FILE LIST (with ID): ==\n";
+  for (auto i = 0; i < task_graphs_files_.size(); i++) {
+    const auto& tg_file = task_graphs_files_[i];
+    const auto& filename = tg_file.first;
+    const auto& task_graph = tg_file.second.get();
+
+    std::cout << "\t\t" << i << ")";
+    if (task_graph->getIdIsSet()) {
+      std::cout << " " << task_graph->getId();
+    }
+    std::cout << " <" << filename << ">\n";
+  }
+
+  std::cout << std::endl;
+}
+
+bool wallet::removeApplication(std::string filename) {
+  return wallet_file_handler_.removeFromFile("a: " + filename);
+}
+
+bool wallet::removeMemory(std::string filename) {
+  return wallet_file_handler_.removeFromFile("m: " + filename);
+}
+
+bool wallet::removeTaskGraphFile(std::string filename) {
+  return wallet_file_handler_.removeFromFile("t: " + filename);
 }

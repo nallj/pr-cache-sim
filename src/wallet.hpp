@@ -1,26 +1,33 @@
-#ifndef WALLET_H
-#define WALLET_H
+#ifndef NALLJ_DRACHMA_WALLET
+#define NALLJ_DRACHMA_WALLET
 
-#include <vector>
-#include <string>
-#include <sstream>
 #include <iostream>
-#include <map>
+#include <map> // multimap
+#include <memory> // make_shared, make_unique, shared_ptr
+#include <string> // getline, string, to_string
+#include <sstream> // stringstream
+#include <stdexcept> // runtime_error
+#include <unordered_map> // unordered_map
+#include <utility> // move, pair
+#include <vector>
 
-#include "fileHandler.hpp"
+#include <boost/algorithm/string/trim.hpp>
+#include <cppJsonGraph/deserializer.hpp>
+#include <cppJsonGraph/graph.hpp>
+
+#include "algs/cache/fifoAlg.hpp" // fifo replacement
+//#include "algs/cache/randomAlg.hpp" // random replacement
+#include "components/icap.hpp"
+#include "components/prc.hpp"
 #include "device.hpp"
-#include "application.hpp"
-
+#include "fileHandler.hpp"
+#include "specs/application.hpp"
 #include "storage/storageUnit.hpp"
 #include "storage/memoryLevel.hpp"
 #include "storage/reconfigurableRegions.hpp"
+#include "userError.hpp"
 
-//#include "algs/randomAlg.hpp" // random replacement
-#include "algs/fifoAlg.hpp" // fifo replacement
-
-#include "components/icap.hpp"
-#include "components/prc.hpp"
-
+using graph_ptr_t = std::shared_ptr<nallj::graph>;
 
 // wallet acts as a library for drachma
 class wallet {
@@ -46,12 +53,15 @@ class wallet {
     "icap width",
     "icap speed",
     "prc speed",
+    "prr selection policy",
+    "task scheduling",
     "static region speed"
   };
   std::vector<std::string> application_regex_ {
     "\\bsr\\d+ \\bmodule count\\b[:] \\d+",
     "\\brr\\d+\\b \\bbitstream size\\b[:] \\d+",
-    "\\brr\\d+\\b \\bmodule \\d+ speed\\b[:] \\d+[.]\\d{1,2}"
+    "\\brr\\d+\\b \\bmodule \\d+ speed\\b[:] \\d+[.]\\d{1,2}",
+    "\\brr\\d+\\b \\bmodule \\d+ tasks\\b[:] [^,\\n]+(, *[^,\\n ]+)*"
   };
 
   std::vector<std::string> trace_params_ { "name" };
@@ -61,41 +71,39 @@ class wallet {
     "s?(\\d+)(,\\d+) {3},(\\d+)?"
   };
 
-  fileHandler wallet_handler_;
-  reconfigurableRegions buildMemoryHierarchy(std::string memory_file);
-  application* createApplication(std::string application_file);
-  std::pair<std::string, std::string>* createTraceFilePair(std::string trace_file);
-  //std::vector<device> devices_;
   std::vector<reconfigurableRegions> memories_;
   std::vector<application*> applications_;
-  std::vector<std::pair<std::string, std::string>*>trace_files_;
+  std::vector<std::pair<std::string, graph_ptr_t>> task_graphs_files_;
+  fileHandler wallet_file_handler_;
+
+  void assertEntityFileExists(std::string filename, std::string entity_name);
+  reconfigurableRegions buildMemoryHierarchy(std::string memory_file);
+  application* createApplication(std::string application_file);
+  graph_ptr_t createTaskGraph(std::string tg_file);
+  schedulingAlgType getTaskSchedulingAlgType(std::string str);
+  prrSelectionPolicyType getPrrSchedulingPolicyType(std::string str);
 
 public:
   std::string name_;
 
   wallet();
 
-  void printDetails();
-  //void addDevice(std::string file_name);
-  //bool removeDevice(std::string file_name);
-  void addMemory(std::string file_name);
-  bool removeMemory(std::string file_name);
-  void addApplication(std::string file_name);
-  bool removeApplication(std::string file_name);
-  void addTraceFile(std::string file_name);
-  bool removeTraceFile(std::string file_name);
-
-  std::vector<std::string> getMemoryParamRules();
-  std::vector<std::string> getMemoryRegexRules();
+  void addApplication(std::string filename);
+  void addMemory(std::string filename);
+  void addTraceFile(std::string filename);
+  application* getApplication(unsigned application_id);
   std::vector<std::string> getApplicationParamRules();
   std::vector<std::string> getApplicationRegexRules();
+  reconfigurableRegions getMemory(unsigned memory_id);
+  std::vector<std::string> getMemoryParamRules();
+  std::vector<std::string> getMemoryRegexRules();
+  graph_ptr_t getTaskGraph(unsigned task_graph_id);
   std::vector<std::string> getTraceParamRules();
   std::vector<std::string> getTraceRegexRules();
-
-  //device getDevice(unsigned device_id);
-  reconfigurableRegions getMemory(unsigned memory_id);
-  application* getApplication(unsigned application_id);
-  std::vector<std::string> getTraceFile(unsigned trace_id);
+  void printDetails();
+  bool removeApplication(std::string filename);
+  bool removeMemory(std::string filename);
+  bool removeTaskGraphFile(std::string filename);
 };
 
 #endif

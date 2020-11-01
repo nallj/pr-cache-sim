@@ -1,8 +1,8 @@
-#ifndef TRACE_TOKEN
-#define TRACE_TOKEN
+#ifndef NALLJ_DRACHMA_TRACE_TOKEN
+#define NALLJ_DRACHMA_TRACE_TOKEN
 
-#include <string>
 #include <iostream>
+#include <string>
 #include <sstream>
 
 class traceToken;
@@ -24,7 +24,6 @@ class traceToken {
 public:
   traceToken();
   traceToken(std::string trace_string);
-  // ~traceToken() {};
 
   bool isForStaticRegion();
   bool isDependent();

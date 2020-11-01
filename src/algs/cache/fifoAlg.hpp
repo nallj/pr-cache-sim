@@ -1,5 +1,5 @@
-#ifndef FIFO_ALG
-#define FIFO_ALG
+#ifndef NALLJ_DRACHMA_FIFO_ALG
+#define NALLJ_DRACHMA_FIFO_ALG
 
 #include "replAlg.hpp"
 

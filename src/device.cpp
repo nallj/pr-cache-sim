@@ -1,12 +1,12 @@
 #include "device.hpp"
 
-/* PUBLIC */
+void device::assignTaskGraph(std::shared_ptr<nallj::graph> task_graph) {
+  task_graph_ = task_graph;
+}
 
 void device::associateHierarchy(reconfigurableRegions memory_hierarchy) {
-  //memory_hierarchy_top_ = &memory_hierarchy;
   memory_hierarchy_top_ = memory_hierarchy;
 
-  //storageUnit* ptr = &memory_hierarchy;
   storageUnit* ptr = &memory_hierarchy;
   memory_hierarchy_.push_back(ptr);
 
@@ -15,8 +15,11 @@ void device::associateHierarchy(reconfigurableRegions memory_hierarchy) {
   }
 }
 
+/**
+ * @param app Application the device will prepare for.
+ * @return if a this device is able to facilitate the given application.
+ */
 bool device::prepareApplicationResources(application* app) {
-  //simulated_application_ = app;
 
   // instantiate all static regions with their module contents
   auto static_module_counts = app->getStaticModules();
@@ -25,7 +28,7 @@ bool device::prepareApplicationResources(application* app) {
   auto static_it = static_module_counts->begin();
   for (; static_it != static_module_counts->end(); static_it++) {
 
-    auto region_id = static_it->first;
+    const auto& region_id = static_it->first;
     std::vector<module*> current_static_modules;
 
     // TODO: consider allowing for each static region to have its' own speed
@@ -38,27 +41,26 @@ bool device::prepareApplicationResources(application* app) {
     static_regions_.insert(std::pair<unsigned, std::vector<module*>>(region_id, current_static_modules));
   }
 
-  // instantiate all reconfigurable regions with their module contents
-  auto reconfig_module_data = app->getReconfigurableModules();
+  const auto rr_specs = app->getReconfigurableRegions();
 
   // iterate through each reconfigurable region; for each region, create a placeholder module
   unsigned required_bitstream_space = 0;
-  auto reconfig_it = reconfig_module_data->begin();
 
   // for each reconfigurable module, add it to the bitstream library in main memory
   auto main_memory = memory_hierarchy_.back();
 
-  for (; reconfig_it != reconfig_module_data->end(); reconfig_it++) {
+  for (auto it = rr_specs.begin(); it != rr_specs.end(); it++) {
 
-    auto region_id = reconfig_it->first;
-    auto bitstream_width = reconfig_it->second.first;
+    const auto region_id = it->first;
+    const auto module_specs = it->second;
+    const auto bitstream_width = module_specs.begin()->second.bitstream_width;
 
     // at the PRR level, insert a placeholder module
-    auto new_mod = new module(region_id, -1, 0, 0);
+    const auto new_mod = new module(region_id, -1, 0, 0);
     memory_hierarchy_top_.insertModule(new_mod);
 
     // track the amount of space required for the main memory to store all reconfigurable modules
-    auto region_module_count = reconfig_it->second.second.size();
+    const auto region_module_count = module_specs.size();
     required_bitstream_space += region_module_count * bitstream_width;
 
     // document the amount of modules in each region for later use
@@ -66,10 +68,11 @@ bool device::prepareApplicationResources(application* app) {
     // was prr_index_
 
     // instantiate the bitstream library as modules are iterated over
-    for (auto i = 0; i < region_module_count; i++) {
+    for (const auto module_entry : module_specs) {
+      const auto spec = module_entry.second;
 
-      auto bitstream = new module(region_id, i, bitstream_width, reconfig_it->second.second[i]);
-      main_memory->insertModule(bitstream);
+      const auto rr_space = new module(region_id, spec.id, bitstream_width, spec.speed);
+      main_memory->insertModule(rr_space);
     }
   }
 
@@ -78,7 +81,6 @@ bool device::prepareApplicationResources(application* app) {
 
   prr_bitstream_sizes_ = app->getReconfigurableRegionBitstreamSizes();
   simulator_speed_ = app->getSimulatorSpeed();
-
   icap_ = app->getIcap();
   prc_ = app->getPrc();
 
@@ -86,22 +88,14 @@ bool device::prepareApplicationResources(application* app) {
   return main_memory->getSize() >= required_bitstream_space;
 }
 
-void device::parseTraceFile(std::vector<std::string> trace_file) {
-  traces_ = new std::vector<traceToken*>();
-
-  for (auto i = 0; i < trace_file.size(); i++) {
-    traces_->push_back(new traceToken(trace_file[i]));
-  }
-}
-
 void device::simulateApplication(unsigned long long int stop_ccc) {
 
-  // simulator clock cycle count
+  // Simulator clock cycle count
   unsigned long long int ccc = 0;
   unsigned long long int max_ccc = -1;
 
   // Get the PRR count.
-  auto prr_count = prr_census_.size();
+  const auto prr_count = prr_census_.size();
 
   std::cout << "\nINFO: Simulator will execute at a rate of " << simulator_speed_ << " MHz.\n";
 
@@ -121,12 +115,11 @@ void device::simulateApplication(unsigned long long int stop_ccc) {
   prc_->connect(
 		&memory_hierarchy_,
 		&memory_hierarchy_top_,
-		traces_,
+		task_graph_,
     simulation_context.accessContextSignalBus(PRR_EXE),
     simulation_context.accessContextSignal(PRR_PRC_ACK),
     simulation_context.accessContextSignal(ICAP_PRC_ACK),
-    simulation_context.accessContextSignal(ICAP_TRANSFER_PRR),
-    simulation_context.accessContextCurrentTrace(false)
+    simulation_context.accessContextSignal(ICAP_TRANSFER_PRR)
 	);
 
   // TODO: Pass in the simulation context instead of the individual signals.
@@ -159,28 +152,28 @@ void device::simulateApplication(unsigned long long int stop_ccc) {
 	}
 
 
-  // MAIN SIMULATION LOOP
+  // Main simulation loop
   unsigned long *trace_pointer;
   while (ccc < stop_ccc) {
 
-    // Readability divider.
+    // Readability divider
     std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
 
-    // PRC and ICAP step.
+    // PRC and ICAP step
     prc_->step();
     icap_->step();
 
     std::cout << std::endl;
 
-    // PRR controllers step.
+    // PRR controllers step
     for (auto i = 0; i < prr_level_controllers.size(); i++) {
       prr_level_controllers[i]->step();
 		}
 
-    // propagate all signal values through the simulation signal context
+    // Propagate all signal values through the simulation signal context.
     simulation_context.refreshContext(true);
 
-    // stop the simulator if the maximum simulation cycle has been reached.
+    // Stop the simulator if the maximum simulation cycle has been reached.
     if (++ccc == max_ccc) {
       std::cout << "Warning: Reached Drachma's present operational limits. Simulation ceased.";
       break;
@@ -191,6 +184,5 @@ void device::simulateApplication(unsigned long long int stop_ccc) {
     if (ccc == 1000) {
 			break;
 		}
-
-  } // end main loop
+  }
 }

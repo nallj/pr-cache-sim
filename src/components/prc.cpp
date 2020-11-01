@@ -12,40 +12,38 @@ static const unsigned prcStateStalls[] = {
 };
 
 
-prc::prc(double prc_speed) :
+prc::prc(double prc_speed, schedulingAlgType scheduling_alg_type, prrSelectionPolicyType prr_sel_policy_type) :
   prc_speed_(prc_speed),
   next_state_(PRC_INIT),
   prc_counter_(0),
   memory_counter_(0),
   trace_counter_(0),
   stall_count_(0),
+  scheduling_alg_(),
+  scheduling_alg_type_(scheduling_alg_type),
   prr_ctrl_execute_(false),
+  prr_sel_policy_type_(prr_sel_policy_type),
   memory_ack_(false),
-  icap_req_(false) { }
+  icap_req_(false) {}
 
 prc::~prc() {
   delete mem_search_done_;
   delete mem_search_found_;
-  delete current_trace_;
+  // delete current_trace_;
 }
-
 
 void prc::connect(
   std::vector<storageUnit*>* memory_hierarchy,
   reconfigurableRegions* memory_hierarchy_top,
-  std::vector<traceToken*>* traces,
+  std::shared_ptr<nallj::graph> task_graph,
   std::deque<bool>* prr_executing,
   bool* prr_ack,
   bool* icap_ack,
-  bool *icap_trans,
-  traceToken** icap_current_trace_ptr
+  bool* icap_trans
 ) {
-
   // IN signals
   memory_hierarchy_ = memory_hierarchy;
   memory_hierarchy_top_ = memory_hierarchy_top;
-
-  traces_ = traces;
 
   prr_executing_ = prr_executing;
   prr_ack_ = prr_ack;
@@ -55,11 +53,18 @@ void prc::connect(
     prr_start_.push_back(false);
   }
 
-  // OUT signalsS
+  // OUT signals
   icap_ack_ = icap_ack;
   icap_trans_ = icap_trans;
 
-  icap_current_trace_ptr_ = icap_current_trace_ptr;
+  // Wire up the scheduler.
+  switch (scheduling_alg_type_) { 
+    case FCFS:
+      scheduling_alg_ = std::make_unique<fcfsAlg>(task_graph);
+      break;
+    default:
+      throw std::invalid_argument("Unknown scheduling algorithm.");
+  }
 }
 
 void prc::step() {
@@ -84,17 +89,23 @@ void prc::step() {
         //mc_ = &memory_counter_;
         //tc_ = &trace_counter_;
 
-        next_state_ = PRC_LATCH;
+        next_state_ = PRC_SCHEDULE;
         break;
 
+      case PRC_SCHEDULE:
+        break;
+
+      /*
       case PRC_LATCH:
         std::cout << "passing LATCH stage";
 
         // this wont be a necessary state if tc_ is the trace counter since it
         // will only ever be incremented by the PRC
-        current_trace_ = traces_->at(trace_counter_);
+        // current_trace_ = traces_->at(trace_counter_);
+        const auto& task = scheduling_alg_->peekCurrentTask();
+        const auto& task_id = scheduling_alg_->peekCurrentTaskId();
 
-        std::cout << " while capturing new trace <" << current_trace_ << ">\n";
+        std::cout << " while latching new task <" << task_id << ">\n";
 
         next_state_ = PRC_FIND_LOOP;
         break;
@@ -104,10 +115,10 @@ void prc::step() {
 
         // This was removed because it doesn't make sense.
         // if (current_trace_->getRequestTime() <= prc_counter_) {
-          std::cout << "new request <" << current_trace_ << "> - ";
+          // std::cout << "new request <" << current_trace_ << "> - ";
 
-          auto region_id = current_trace_->getRegionId();
-          auto module_id = current_trace_->getModuleId();
+          auto region_id = 0; // current_trace_->getRegionId();
+          auto module_id = 0; // current_trace_->getModuleId();
 
 
           // if ICAP is already transferring the needed module to its' corresponding
@@ -120,8 +131,9 @@ void prc::step() {
 
             std::cout << "module is being TRANSFERRED by the ICAP to its' region (ENQUEUING).\n";
 
-            if (*icap_current_trace_ptr_ == current_trace_)
-              std::cout << ">>>>>>>>>>> HEY! THE POINTERS MATCH UP!!! <<<<<\n\n";
+            // if (*icap_current_trace_ptr_ == current_trace_) {
+            //   std::cout << ">>>>>>>>>>> HEY! THE POINTERS MATCH UP!!! <<<<<\n\n";
+            // }
 
             prr_enqueue_[region_id] = true;
             next_state_ = PRR_ENQUEUE;
@@ -200,17 +212,17 @@ void prc::step() {
       case PRR_START:
         std::cout << "passing PRR START stage - ";
 
-        if (prr_executing_->at(current_trace_->getRegionId())) {
-          std::cout << "the PRR_CTRL complied (halting request)\n";
+        // if (prr_executing_->at(current_trace_->getRegionId())) {
+        //   std::cout << "the PRR_CTRL complied (halting request)\n";
 
-          prr_start_[current_trace_->getRegionId()] = false;
-          trace_counter_++;
+        //   prr_start_[current_trace_->getRegionId()] = false;
+        //   trace_counter_++;
 
-          next_state_ = PRC_LATCH;
+        //   next_state_ = PRC_LATCH;
 
-        } else {
-          std::cout << "the PRR CTRL has not complied yet.\n";
-        }
+        // } else {
+        //   std::cout << "the PRR CTRL has not complied yet.\n";
+        // }
 
         break;
 
@@ -221,7 +233,7 @@ void prc::step() {
         if (*prr_ack_) {
           std::cout << "the PRR_CTRL ACKed the ENQUEUE (halting request)\n";
 
-          prr_enqueue_[current_trace_->getRegionId()] = false;
+          // prr_enqueue_[current_trace_->getRegionId()] = false;
           trace_counter_++;
 
           next_state_ = PRC_LATCH;
@@ -257,10 +269,11 @@ void prc::step() {
       case SEARCH_WAIT:
         std::cout << "passing SEARCH WAIT stage\n";
         break;
+      */
 
       default:
-        std::cout << "ERROR: PRC is in an UNKNOWN STATE!\n";
-        throw;
+        const char* msg = "PRC has reached an unknown state.";
+        throw std::runtime_error(msg);
     }
   }
 
@@ -272,7 +285,12 @@ void prc::step() {
 
 // dont change this - this is good
 traceToken** prc::accessTrace() {
-  return &current_trace_;
+  //return &current_trace_;
+
+  auto lol = new traceToken();
+  traceToken** rofl;
+  rofl = &lol;
+  return rofl;
 }
 
 // PRC_MC

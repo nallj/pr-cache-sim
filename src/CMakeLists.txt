@@ -1,22 +1,26 @@
+set(CMAKE_BUILD_TYPE Debug)
 
 add_executable(drachma
-  main.cpp
-  application.cpp
+  algs/cache/fifoAlg.cpp
+  algs/cache/randomAlg.cpp
+  algs/cache/replAlg.cpp
+  algs/task/fcfsAlg.cpp
+  algs/task/schedulingAlg.cpp
   device.cpp
-  fileHandler.cpp
-  algs/replAlg.cpp
-	signalContext.cpp
-  traceToken.cpp
-  wallet.cpp
-  algs/fifoAlg.cpp
-  algs/randomAlg.cpp
   components/icap.cpp
   components/prc.cpp
   components/prrLevelController.cpp
+  fileHandler.cpp
+  main.cpp
+	signalContext.cpp
+  specs/application.cpp
 	storage/memoryLevel.cpp
   storage/module.cpp
   storage/reconfigurableRegions.cpp
 	storage/storageUnit.cpp
+  traceToken.cpp
+  userError.cpp
+  wallet.cpp
 )
 
 target_compile_features(drachma PRIVATE cxx_std_17)

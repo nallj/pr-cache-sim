@@ -1,11 +1,11 @@
-#ifndef RANDOM_ALG
-#define RANDOM_ALG
+#ifndef NALLJ_DRACHMA_RANDOM_ALG
+#define NALLJ_DRACHMA_RANDOM_ALG
 
 #include <random>
 
 #include "replAlg.hpp"
 
-class randomAlg : public replAlg{
+class randomAlg : public replAlg {
 
   unsigned evictNext(); // randomly choose a victim in the tag table
   void reorderTable();

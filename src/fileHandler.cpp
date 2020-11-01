@@ -1,24 +1,22 @@
 #include "fileHandler.hpp"
 
-// Constructors //
+/* Constructors */
 
-fileHandler::fileHandler() { }
+fileHandler::fileHandler() {}
 
 fileHandler::fileHandler(std::string input) :
-    input_file_(input) { }
+  input_file_(input) {
+
+  assertInputFileExists();
+}
 
 // desired paramters only
 fileHandler::fileHandler(std::string input, std::vector<std::string> accept) :
-    input_file_(input), acceptable_params_(accept) {
+  input_file_(input), acceptable_params_(accept) {
 
+  assertInputFileExists();
   parseContent(input);
   parseEntries();
-
-  //if (is_valid_) printEntries();
-
-  /*std::string test[] = {"UNKNOWN", "WHITE", "COMMENT", "PARAMETER", "DATA", "INVALID"};
-  for (unsigned long i = 0; i < file_body_.size(); i++)
-    std::cout << ">  " << file_body_[i].second << "\t\t\t" << test[file_body_[i].first] << std::endl;*/
 }
 
 // desired paramters and data body regex
@@ -29,23 +27,24 @@ fileHandler::fileHandler(
 ) :
   input_file_(input), acceptable_params_(accept), regex_args_(regex) {
 
+  assertInputFileExists();
   parseContent(input);
   parseEntries();
-
-  //if (is_valid_) printEntries();
-
-  /*std::string test[] = {"UNKNOWN", "WHITE", "COMMENT", "PARAMETER", "DATA", "INVALID"};
-  for (unsigned long i = 0; i < 40; i++)
-    std::cout << ">  " << file_body_[i].second << "\t\t\t" << test[file_body_[i].first] << std::endl;*/
 }
 
-// Operations Functions //
+/* Operations Functions */
+
+void fileHandler::assertInputFileExists() {
+  auto file_exists = access(input_file_.c_str(), F_OK) != -1;
+  if (!file_exists) {
+    throw std::invalid_argument("Input file provided to fileHandler does not exist.");
+  }
+}
 
 void fileHandler::deleteIfExists() {
   remove(input_file_.c_str());
 }
 
-//std::vector<std::string>
 void fileHandler::parseContent(std::string fin) {
 
   file_body_.clear(); // clear out current body
@@ -57,46 +56,35 @@ void fileHandler::parseContent(std::string fin) {
 
   while (std::getline(in_file, line)) {
 
-    // handle comment blocks
+    // Starting a long comment block or currently in one.
     if (comment_block || (line.length() > 1 && line.at(0) == LONG_COMMENT_TAG && line.at(1) == COMMENT_TAG) ) {
 
-      // is this the end of a comment block
-      if (comment_block && line.length() > 1 && line.at(0) == COMMENT_TAG && line.at(1) == LONG_COMMENT_TAG)
+      auto line_is_comment_block_end = line.length() > 1 && line.at(0) == COMMENT_TAG && line.at(1) == LONG_COMMENT_TAG;
+
+      // Is this the end of a comment block?
+      if (comment_block && line_is_comment_block_end) {
         comment_block = false;
-
-      else
+      } else {
         comment_block = true;
+      }
 
       file_body_.push_back( std::make_pair(COMMENT, line) );
-      continue;
-    }
 
-    // check for single comment
-    if (line.length() > 0 && line.at(0) == COMMENT_TAG) {
+    // Check for a single comment.
+    } else if (line.length() > 0 && line.at(0) == COMMENT_TAG) {
 
       file_body_.push_back( std::make_pair(COMMENT, line) );
-      continue;
-    }
 
-    // parsing not inhibited by comment block
-    if (line.length() == 0)
+    // An empty line.
+    } else if (line.length() == 0) {
       file_body_.push_back( std::make_pair(WHITE, line) );
 
-    else{
-
-      // single line comment
-      //if (line.length() > 0 && line.at(0) == COMMENT_TAG)
-        //continue;
-
-      // push non-disqualified line onto file body holder
+    // Line type is unknown.
+    } else {
       file_body_.push_back( std::make_pair(UNKNOWN, line) );
     }
-
-
   }
   in_file.close();
-
-  //return body;
 }
 
 void fileHandler::parseEntries() {
@@ -144,7 +132,7 @@ void fileHandler::parseEntries() {
       for (int j = 0; j < regex_args_.size(); j++) {
 
         boost::smatch match;
-
+  
         if ( boost::regex_match(file_body_[i].second, match, boost::regex{regex_args_[j]}) ) {
 
           //data_body_.push_back(file_body_[i]); // insert into data vector
@@ -216,7 +204,7 @@ bool fileHandler::removeFromFile(std::string line) {
     fout.close();
     return true;
 
-  }else std::cout << "\n\nError: Entry not found in file!\n\n";
+  } else std::cout << "\n\nError: Entry not found in file!\n\n";
 
   return false;
 }

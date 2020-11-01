@@ -477,6 +477,7 @@ bool* signalContext::accessContextSignal(icapSignal signal, unsigned bus_bit) {
   }
 }
 
+// TODO: Get rid of this. Traces are superseded by task graphs.
 traceToken** signalContext::accessContextCurrentTrace(bool fromPrcElseIcap) {
   return fromPrcElseIcap ? prc_current_trace_ : icap_current_trace_;
 }

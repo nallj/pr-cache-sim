@@ -1,22 +1,26 @@
-#ifndef DEVICE
-#define DEVICE
+#ifndef NALLJ_DRACHMA_DEVICE
+#define NALLJ_DRACHMA_DEVICE
 
 #include <iostream>
+#include <map> // map
+#include <memory> // shared_ptr
+#include <queue>
 #include <string>
-#include <vector>
 #include <stdio.h>
 #include <stdlib.h>
 #include <tuple>
-#include <queue>
-#include <map>
+#include <unordered_map> // unordered_map
+#include <vector>
+
+#include <cppJsonGraph/graph.hpp>
 
 #include "fileHandler.hpp"
-#include "application.hpp"
 #include "signalContext.hpp"
 #include "traceToken.hpp"
 #include "components/icap.hpp"
 #include "components/prc.hpp"
 #include "components/prrLevelController.hpp"
+#include "specs/application.hpp"
 #include "storage/storageUnit.hpp"
 #include "storage/memoryLevel.hpp"
 #include "storage/reconfigurableRegions.hpp"
@@ -28,14 +32,14 @@ class device {
   std::multimap<unsigned, std::vector<module*>> static_regions_;
   //std::map<unsigned, unsigned> prr_index_;
   std::map<unsigned, unsigned> prr_census_;
-  std::vector<unsigned> prr_bitstream_sizes_;
+  std::unordered_map<unsigned, unsigned> prr_bitstream_sizes_;
   std::vector<storageUnit*> memory_hierarchy_;
   reconfigurableRegions memory_hierarchy_top_;
   double simulator_speed_;
   //application* simulated_application_;
+  std::shared_ptr<nallj::graph> task_graph_;
   icap* icap_;
   prc* prc_;
-  std::vector<traceToken*>* traces_;
 
   // memoryLevel& associativityToRegion(unsigned module_index);
   // memoryLevel& findInCache(unsigned module_index);
@@ -45,9 +49,9 @@ class device {
 public:
   std::string name_, file_;
 
+  void assignTaskGraph(std::shared_ptr<nallj::graph> task_graph);
   void associateHierarchy(reconfigurableRegions memory_hierarchy);
   bool prepareApplicationResources(application* app);
-  void parseTraceFile(std::vector<std::string> trace_file);
   void simulateApplication(unsigned long long int stop_ccc = -1);
 };
 

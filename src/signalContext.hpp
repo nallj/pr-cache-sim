@@ -1,5 +1,5 @@
-#ifndef SIGNAL_CONTEXT
-#define SIGNAL_CONTEXT
+#ifndef NALLJ_DRACHMA_SIGNAL_CONTEXT
+#define NALLJ_DRACHMA_SIGNAL_CONTEXT
 
 #include <iostream>
 #include <vector>

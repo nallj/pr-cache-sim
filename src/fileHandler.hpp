@@ -1,5 +1,5 @@
-#ifndef FILE_HANDLER
-#define FILE_HANDLER
+#ifndef NALLJ_DRACHMA_FILE_HANDLER
+#define NALLJ_DRACHMA_FILE_HANDLER
 
 #include <string>
 #include <vector>
@@ -7,6 +7,7 @@
 #include <fstream>
 #include <map>
 #include <string>
+#include <stdexcept> // invalid_argument
 #include <stdio.h>
 
 #include <boost/algorithm/string/trim.hpp>
@@ -17,8 +18,8 @@
 
 enum lineType { UNKNOWN, WHITE, COMMENT, PARAMETER, DATA, INVALID };
 
-class fileHandler{
-
+class fileHandler {
+  std::string input_file_;
   bool is_valid_ = true;
 
   std::vector<std::string> acceptable_params_;
@@ -26,16 +27,16 @@ class fileHandler{
   std::vector< std::pair<lineType, std::string> > file_body_;
   std::multimap<std::string, std::string> param_dictionary_;
 
-public:
-  std::string input_file_;
+  void assertInputFileExists();
 
-  // Constructors //
+public:
+  // Constructors
   fileHandler();
   fileHandler(std::string input);
   fileHandler(std::string input, std::vector<std::string> accept);
   fileHandler(std::string input, std::vector<std::string> accept, std::vector<std::string> regex);
 
-  // Operations Functions //
+  // Operations Functions
   void deleteIfExists();
   void parseContent(std::string fin);
   void parseEntries(); // search for accepted parameters and regex matches for data body
@@ -44,7 +45,7 @@ public:
   std::pair<bool, unsigned long> findInFile(std::string line); // TODO: not finished
   bool removeFromFile(std::string line); // TODO: not finished
 
-  // Accessor Methods //
+  // Accessor Methods
   bool isFileValid();
   std::multimap<std::string, std::string> getParams();
   std::vector<std::string> getData();

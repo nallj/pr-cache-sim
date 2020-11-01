@@ -10,7 +10,8 @@ module::module(unsigned id, unsigned bitstream_width, double speed) :
   bitstream_width_(bitstream_width),
   operating_speed_(speed),
   internal_timestep_(0),
-  executing_(false) { }
+  executing_(false),
+  in_simulation_(false) { }
 
 module::module(unsigned region_id, unsigned module_id, unsigned bitstream_width, double speed) :
   current_state_(VACANT),
@@ -19,49 +20,67 @@ module::module(unsigned region_id, unsigned module_id, unsigned bitstream_width,
   bitstream_width_(bitstream_width),
   operating_speed_(speed),
   internal_timestep_(0),
-  executing_(false) { }
+  executing_(false),
+  in_simulation_(false) { }
 
 
-moduleState module::getModuleState() {
+moduleState module::getModuleState() const {
   return current_state_;
 }
 
-unsigned module::getRegionId() {
+unsigned module::getRegionId() const {
   return region_id_;
 }
 
-//unsigned getId();
-unsigned module::getModuleId() {
+unsigned module::getModuleId() const {
   return module_id_;
 }
 
-//void reassignId(unsigned);
-void module::reassignId(unsigned new_id) {
-  module_id_ = new_id;
+void module::setId(unsigned id) {
+  if (in_simulation_) {
+    const auto msg = "Can't set a module's ID after simulation has begun.";
+    throw std::runtime_error(msg);
+  }
+  module_id_ = id;
 }
 
-//void alterSpeed(double);
-void module::alterSpeed(double new_speed) {
-  operating_speed_ = new_speed;
+void module::setRrId(unsigned rr_id) {
+  if (in_simulation_) {
+    const auto msg = "Can't set a module's RR ID after simulation has begun.";
+    throw std::runtime_error(msg);
+  }
+  region_id_ = rr_id;
 }
 
-//unsigned getSize();
-unsigned module::getSize() {
+void module::setSpeed(double speed) {
+  if (in_simulation_) {
+    const auto msg = "Can't set a module's speed after simulation has begun.";
+    throw std::runtime_error(msg);
+  }
+  operating_speed_ = speed;
+}
+
+void module::setTasks(std::vector<std::string> task_ids) {
+  if (in_simulation_) {
+    const auto msg = "Can't set a module's tasks after simulation has begun.";
+    throw std::runtime_error(msg);
+  }
+  task_ids_ = task_ids;
+}
+
+unsigned module::getSize() const {
   return bitstream_width_;
 }
 
-//double getSpeed();
-double module::getSpeed() {
+double module::getSpeed() const {
   return operating_speed_;
 }
 
-//unsigned getCurrentTimestep();
-unsigned module::getCurrentTimestep() {
+unsigned module::getCurrentTimestep() const {
   return internal_timestep_;
 }
 
-//unsigned getRemainingExecutionLatency();
-unsigned module::getRemainingExecutionLatency() {
+unsigned module::getRemainingExecutionLatency() const {
   return execution_time_ - internal_timestep_;
 }
 
@@ -69,7 +88,6 @@ void module::beginTransfer() {
   current_state_ = TRANSFER;
 }
 
-//void beginExecution(double sim_speed, unsigned execution_time);
 void module::beginExecution(double sim_speed, unsigned execution_time) {
 
   current_state_ = EXEC;
@@ -86,6 +104,7 @@ void module::beginExecution(double sim_speed, unsigned execution_time) {
 
 //bool step(double reference_speed, unsigned long long current_cycle);
 bool module::step() {
+  in_simulation_ = true;
 
   /*unsigned long ref = sim_speed * 100;
   unsigned long mod = operating_speed_ * 100;
@@ -105,7 +124,7 @@ bool module::step() {
 }
 
 
-bool module::isRunning() {
+bool module::isRunning() const {
   return executing_;
 };
 

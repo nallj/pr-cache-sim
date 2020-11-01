@@ -1,5 +1,5 @@
-#ifndef STORAGE_UNIT
-#define STORAGE_UNIT
+#ifndef NALLJ_DRACHMA_STORAGE_UNIT
+#define NALLJ_DRACHMA_STORAGE_UNIT
 
 #include <iostream>
 #include <vector>
@@ -30,7 +30,7 @@ public:
   // used exclusively in the memoryLevel constructor
   storageUnit(unsigned unit_size, unsigned short read_latency, unsigned short search_latency);
 
-  //storageUnit(std::string name, std::string file_name, unsigned short unit_size,
+  //storageUnit(std::string name, std::string filename, unsigned short unit_size,
   //    replAlg* repl_alg, unsigned short read_latency, unsigned short search_latency);
 
   storageUnit(const storageUnit& su);

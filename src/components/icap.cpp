@@ -21,7 +21,7 @@ icap::icap(double speed, unsigned bus_width) :
   
 icap::~icap() { };
 
-void icap::setRegionWidths(std::vector<unsigned> region_width) {
+void icap::setRegionWidths(std::unordered_map<unsigned, unsigned> region_width) {
   region_width_ = region_width;
 }
 

@@ -1,10 +1,10 @@
-#ifndef _MEMORY_LEVEL_H_
-#define _MEMORY_LEVEL_H_
+#ifndef NALLJ_DRACHMA_MEMORY_LEVEL
+#define NALLJ_DRACHMA_MEMORY_LEVEL
 
 #include <map>
 
 #include "storageUnit.hpp"
-#include "../algs/replAlg.hpp"
+#include "../algs/cache/replAlg.hpp"
 
 class memoryLevel : public storageUnit {
 

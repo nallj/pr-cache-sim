@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <map> // multimap
-#include <memory> // make_shared, make_unique, shared_ptr
+#include <memory> // make_shared, shared_ptr
 #include <string> // getline, string, to_string
 #include <sstream> // stringstream
 #include <stdexcept> // runtime_error
@@ -72,26 +72,24 @@ class wallet {
   };
 
   std::vector<reconfigurableRegions> memories_;
-  std::vector<application*> applications_;
+  std::vector<std::shared_ptr<application>> applications_;
   std::vector<std::pair<std::string, graph_ptr_t>> task_graphs_files_;
   fileHandler wallet_file_handler_;
 
-  void assertEntityFileExists(std::string filename, std::string entity_name);
-  reconfigurableRegions buildMemoryHierarchy(std::string memory_file);
-  application* createApplication(std::string application_file);
-  graph_ptr_t createTaskGraph(std::string tg_file);
-  schedulingAlgType getTaskSchedulingAlgType(std::string str);
-  prrSelectionPolicyType getPrrSchedulingPolicyType(std::string str);
+  void assertEntityFileExists(const std::string& filename, const std::string& entity_name);
+  reconfigurableRegions buildMemoryHierarchy(const std::string& memory_file);
+  std::shared_ptr<application> createApplication(const std::string& application_file);
+  graph_ptr_t createTaskGraph(const std::string& tg_file);
 
 public:
   std::string name_;
 
   wallet();
 
-  void addApplication(std::string filename);
-  void addMemory(std::string filename);
-  void addTraceFile(std::string filename);
-  application* getApplication(unsigned application_id);
+  void addApplication(const std::string& filename);
+  void addMemory(const std::string& filename);
+  void addTraceFile(const std::string& filename);
+  std::shared_ptr<application> getApplication(unsigned application_id);
   std::vector<std::string> getApplicationParamRules();
   std::vector<std::string> getApplicationRegexRules();
   reconfigurableRegions getMemory(unsigned memory_id);
@@ -101,9 +99,9 @@ public:
   std::vector<std::string> getTraceParamRules();
   std::vector<std::string> getTraceRegexRules();
   void printDetails();
-  bool removeApplication(std::string filename);
-  bool removeMemory(std::string filename);
-  bool removeTaskGraphFile(std::string filename);
+  bool removeApplication(const std::string& filename);
+  bool removeMemory(const std::string& filename);
+  bool removeTaskGraphFile(const std::string& filename);
 };
 
 #endif

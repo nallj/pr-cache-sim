@@ -12,7 +12,7 @@ static const unsigned prcStateStalls[] = {
 };
 
 
-prc::prc(double prc_speed, schedulingAlgType scheduling_alg_type, prrSelectionPolicyType prr_sel_policy_type) :
+prc::prc(double prc_speed, schedulingAlgType scheduling_alg_type, rrSelectionPolicyType prr_sel_policy_type) :
   prc_speed_(prc_speed),
   next_state_(PRC_INIT),
   prc_counter_(0),

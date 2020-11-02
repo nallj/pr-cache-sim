@@ -41,7 +41,7 @@ enum schedulingAlgType {
   // PRIORITY
 };
 
-enum prrSelectionPolicyType {
+enum rrSelectionPolicyType {
   LF
 };
 
@@ -74,12 +74,12 @@ class prc {
   // std::shared_ptr<nallj::graph> task_graph_;
 
   traceToken** icap_current_trace_ptr_;
-  prrSelectionPolicyType prr_sel_policy_type_;
+  rrSelectionPolicyType prr_sel_policy_type_;
   schedulingAlgType scheduling_alg_type_;
   std::unique_ptr<schedulingAlg> scheduling_alg_;
 
 public:
-  prc(double prc_speed, schedulingAlgType scheduling_alg_type, prrSelectionPolicyType prr_sel_policy);
+  prc(double prc_speed, schedulingAlgType scheduling_alg_type, rrSelectionPolicyType prr_sel_policy);
   ~prc();
 
   void connect(

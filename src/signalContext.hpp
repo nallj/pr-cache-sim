@@ -1,9 +1,10 @@
 #ifndef NALLJ_DRACHMA_SIGNAL_CONTEXT
 #define NALLJ_DRACHMA_SIGNAL_CONTEXT
 
-#include <iostream>
-#include <vector>
 #include <deque>
+#include <iostream>
+#include <memory> // shared_ptr
+#include <vector>
 
 #include "globals.hpp"
 #include "components/prc.hpp"
@@ -52,7 +53,11 @@ class signalContext {
   );
 
 public:
-  signalContext(std::vector<prrLevelController*>* prr_ctrls, prc* prc, icap* icap);
+  signalContext(
+    std::vector<prrLevelController*>* prr_ctrls,
+    std::shared_ptr<prc> prc,
+    std::shared_ptr<icap> icap
+  );
 
   void refreshContext(bool printRefreshProgress = false, bool beVeryDetailed = false);
 

@@ -2,7 +2,11 @@
 
 /* PUBLIC */
 
-signalContext::signalContext(std::vector<prrLevelController*>* prr_ctrls, prc* prc, icap* icap) :
+signalContext::signalContext(
+  std::vector<prrLevelController*>* prr_ctrls,
+  std::shared_ptr<prc> prc,
+  std::shared_ptr<icap> icap
+) :
   prr_ctrl_count_(prr_ctrls->size()),
   stored_prr_prc_ack_(false),
   stored_prr_icap_ack_(false),

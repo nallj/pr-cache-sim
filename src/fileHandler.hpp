@@ -46,7 +46,7 @@ public:
   bool removeFromFile(std::string line); // TODO: not finished
 
   // Accessor Methods
-  bool isFileValid();
+  bool isFileValid() const;
   std::multimap<std::string, std::string> getParams();
   std::vector<std::string> getData();
 };

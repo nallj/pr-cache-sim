@@ -99,8 +99,7 @@ int main(int argc, char** argv) {
   // try {
     // Ensure switches are present.
     if (argc < 2 || argv[1][0] != 0x2D || argv[1][1] == 0) {
-      const auto msg = "No switches provided.";
-      throw userError(msg, displayHelp);
+      throw userError("No switches provided.", displayHelp);
     }
 
     // Instantiate Drachma wallet.
@@ -141,15 +140,15 @@ int main(int argc, char** argv) {
 
           // Require two switches.
           if (switch_count == 2) {
-            const auto& memory_file = argv[2];
+            const auto memory_file = argv[2];
 
-            const auto& second_switch = switch_choices[1];
+            const auto second_switch = switch_choices[1];
             if (second_switch == 'a') {
               std::cout << "Adding new memory configuration '" << memory_file << "' to the wallet.\n\n";
               valid_use = true;
 
               if (fileExists(memory_file)) {
-                auto memory_reader = fileHandler(
+                const auto memory_reader = fileHandler(
                   memory_file,
                   library.getMemoryParamRules(),
                   library.getMemoryRegexRules()
@@ -320,23 +319,23 @@ int main(int argc, char** argv) {
             */
 
           if (argc == 5 || argc == 6) {
-            auto memory_id = atoi(argv[2]);
-            auto application_id = atoi(argv[3]);
-            auto task_graph_id = atoi(argv[4]);
+            const auto memory_id = atoi(argv[2]);
+            const auto application_id = atoi(argv[3]);
+            const auto task_graph_id = atoi(argv[4]);
 
             // Initialize the simulation device.
             device sim_device;
 
             // Get memory hierarchy, aplication, and task graph.
             auto memory = library.getMemory(memory_id);
-            auto app = library.getApplication(application_id);
+            const auto app = library.getApplication(application_id);
             auto task_graph = library.getTaskGraph(task_graph_id);
 
             // Apply memory hierarchy to device.
             sim_device.associateHierarchy(memory);
 
             // Prepare device resources needed by the application.
-            if (sim_device.prepareApplicationResources(app)) {
+            if (sim_device.prepareAppResources(app)) {
               sim_device.assignTaskGraph(task_graph);
 
               // If specified, stop the simulation after a certain mount of clock cycles.

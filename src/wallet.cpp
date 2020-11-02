@@ -44,19 +44,79 @@ wallet::wallet() {
   }
 }
 
-void wallet::addApplication(std::string filename) {
+/* Helper Functions */
+
+rrSelectionPolicyType getRrSchedulingPolicyType(const std::string& str) {
+  if (str == "lf") {
+    return LF;
+  }
+  throw userError("Invalid PRR scheduling algorithm specified.");
+}
+
+long getModuleIdFromAppParamLine(const std::string& param) {
+  const auto start = param.find("module ") + 7;
+  const auto end = param.find(" ", start);
+  const auto module_id = param.substr(start, end - start);
+  return std::stol(module_id);;
+}
+
+std::string getParamFromMap(const std::multimap<std::string, std::string> map, const char* key) {
+  const auto find_it = map.find(key);
+  if (find_it == map.end()) {
+    throw std::runtime_error("Expected value not found in map.");
+  }
+  return find_it->second;
+}
+
+long getRrIdFromAppParamLine(const std::string& param) {
+  const auto end = param.find(" ");
+  const auto rr_id = param.substr(2, end - 2);
+  return std::stol(rr_id);
+}
+
+long getSrIdFromAppParamLine(const std::string& param) {
+  const auto end = param.find(" ");
+  const auto sr_id = param.substr(2, end - 2);
+  return std::stol(sr_id);
+}
+
+schedulingAlgType getTaskSchedulingAlgType(const std::string& str) {
+  if (str == "fcfs") {
+    return FCFS;
+  }
+  throw userError("Invalid task scheduling algorithm specified.");
+}
+
+void pushCommaDelimitedElements(std::vector<std::string>& list, const std::string str) {
+  auto ss = std::stringstream(str);
+  while (ss.good()) {
+    std::string element;
+    std::getline(ss, element, ',');
+
+    boost::trim(element);
+    list.push_back(element);
+  }
+}
+
+bool stringContains(const std::string& s, const std::string& substr) {
+  return s.find(substr) != std::string::npos;
+}
+
+/* Methods */
+
+void wallet::addApplication(const std::string& filename) {
   wallet_file_handler_.addToFile("a: " + filename);
 }
 
-void wallet::addMemory(std::string filename) {
+void wallet::addMemory(const std::string& filename) {
   wallet_file_handler_.addToFile("m: " + filename);
 }
 
-void wallet::addTraceFile(std::string filename) {
+void wallet::addTraceFile(const std::string& filename) {
   wallet_file_handler_.addToFile("t: " + filename);
 }
 
-void wallet::assertEntityFileExists(std::string filename, std::string entity_name) {
+void wallet::assertEntityFileExists(const std::string& filename, const std::string& entity_name) {
   auto file_exists = access(filename.c_str(), F_OK) != -1;
   if (!file_exists) {
     const auto msg = entity_name + " file referenced in wallet (" + filename + ") does not exist.";
@@ -64,7 +124,7 @@ void wallet::assertEntityFileExists(std::string filename, std::string entity_nam
   }
 }
 
-reconfigurableRegions wallet::buildMemoryHierarchy(std::string memory_file) {
+reconfigurableRegions wallet::buildMemoryHierarchy(const std::string& memory_file) {
 
   auto memory_reader = fileHandler(memory_file, memory_params_, memory_regex_);
 
@@ -188,49 +248,7 @@ reconfigurableRegions wallet::buildMemoryHierarchy(std::string memory_file) {
   return prr;
 }
 
-bool stringContains(const std::string& s, const std::string& substr) {
-  return s.find(substr) != std::string::npos;
-}
-
-std::string getParamFromMap(const std::multimap<std::string, std::string> map, const char* key) {
-  const auto find_it = map.find(key);
-  if (find_it == map.end()) {
-    throw std::runtime_error("Expected value not found in map.");
-  }
-  return find_it->second;
-}
-
-long getModuleIdFromAppParamLine(const std::string& param) {
-  const auto start = param.find("module ") + 7;
-  const auto end = param.find(" ", start);
-  const auto module_id = param.substr(start, end - start);
-  return std::stol(module_id);;
-}
-
-long getRrIdFromAppParamLine(const std::string& param) {
-  const auto end = param.find(" ");
-  const auto rr_id = param.substr(2, end - 2);
-  return std::stol(rr_id);
-}
-
-long getSrIdFromAppParamLine(const std::string& param) {
-  const auto end = param.find(" ");
-  const auto sr_id = param.substr(2, end - 2);
-  return std::stol(sr_id);
-}
-
-void pushCommaDelimitedElements(std::vector<std::string>& list, const std::string str) {
-  auto ss = std::stringstream(str);
-  while (ss.good()) {
-    std::string element;
-    std::getline(ss, element, ',');
-
-    boost::trim(element);
-    list.push_back(element);
-  }
-}
-
-application* wallet::createApplication(std::string application_file) {
+std::shared_ptr<application> wallet::createApplication(const std::string& application_file) {
 
   auto application_reader = fileHandler(application_file, application_params_, application_regex_);
 
@@ -245,21 +263,17 @@ application* wallet::createApplication(std::string application_file) {
   const auto icap_speed = std::stod(getParamFromMap(statically_defined_params, "icap speed"));
   const auto icap_width = std::stol(getParamFromMap(statically_defined_params, "icap width"));
 
-  auto application_icap = std::make_unique<icap>(icap_speed, icap_width);
-
   // Get all PRC-related parameters.
   const auto prc_speed = std::stod(getParamFromMap(statically_defined_params, "prc speed"));
   const auto task_scheduling_type = getParamFromMap(statically_defined_params, "task scheduling");
-  const auto prr_scheduling_alg_type = getParamFromMap(
+  const auto rr_scheduling_alg_type = getParamFromMap(
     statically_defined_params,
     "prr selection policy"
   );
 
   // Get appropriate types for some of the PRC-related parameters.
   const auto task_scheduling_alg = getTaskSchedulingAlgType(task_scheduling_type);
-  const auto prr_scheduling_alg = getPrrSchedulingPolicyType(prr_scheduling_alg_type);
-
-  auto application_prc = std::make_unique<prc>(prc_speed, task_scheduling_alg, prr_scheduling_alg);
+  const auto rr_scheduling_alg = getRrSchedulingPolicyType(rr_scheduling_alg_type);
 
   // get static region speed, if a static region has been defined
   std::string static_region_speed = "";
@@ -273,7 +287,7 @@ application* wallet::createApplication(std::string application_file) {
   // speed of fastest module dictates the speed of the simulator. start search with static region.
   auto fastest_module_speed = std::stod(static_region_speed);
 
-  auto static_modules = new std::multimap<unsigned, unsigned>();
+  std::multimap<unsigned, unsigned> static_modules;
 
   rrSpecMap_t rr_spec_map;
   std::unordered_map<unsigned, unsigned> rr_bitstream_sizes;
@@ -288,15 +302,13 @@ application* wallet::createApplication(std::string application_file) {
     const auto param = dynamically_declared_params[i].substr(0, dynamically_declared_params[i].find(":"));
     const auto arg = dynamically_declared_params[i].substr(dynamically_declared_params[i].find(":") + 2);
 
-    //std::cout << "> " << param << ", " << arg << "\n\n";
-
     // handle static region parameters
     if (param.substr(0, 2) == "sr") {
       if (!sr_speed_specified) {
         throw userError("Static regions specified without speed.");
       }
       const auto sr_id = getSrIdFromAppParamLine(param);
-      static_modules->emplace(sr_id, std::stol(arg));
+      static_modules.emplace(sr_id, std::stol(arg));
     }
 
     // Handle reconfigurable region parameters.
@@ -358,28 +370,31 @@ application* wallet::createApplication(std::string application_file) {
     }
   }
 
-  auto new_app = new application(
-    application_icap,
-    application_prc,
+  const auto new_app = std::make_shared<application>(
+    icap_speed,
+    icap_width,
+    prc_speed,
+    task_scheduling_alg,
+    rr_scheduling_alg,
     std::stod(static_region_speed),
     static_modules,
     rr_spec_map,
     fastest_module_speed
   );
-  new_app->name_ = getParamFromMap(statically_defined_params, "name");
-  new_app->file_ = application_file;
+  new_app->name = getParamFromMap(statically_defined_params, "name");
+  new_app->file = application_file;
 
   return new_app;
 }
 
-graph_ptr_t wallet::createTaskGraph(std::string tg_file) {
+graph_ptr_t wallet::createTaskGraph(const std::string& tg_file) {
   nallj::deserializer d;
   auto input_stream = std::ifstream(tg_file);
   auto graph = d.getGraph(input_stream);
   return std::make_shared<nallj::graph>(graph);
 }
 
-application* wallet::getApplication(unsigned application_id) {
+std::shared_ptr<application> wallet::getApplication(unsigned application_id) {
   if (applications_.size() - 1 < application_id) {
     throw userError("Too large of an application ID was specified.");
   }
@@ -407,20 +422,6 @@ std::vector<std::string> wallet::getMemoryParamRules() {
 
 std::vector<std::string> wallet::getMemoryRegexRules() {
   return memory_regex_;
-}
-
-prrSelectionPolicyType wallet::getPrrSchedulingPolicyType(std::string str) {
-  if (str == "lf") {
-    return LF;
-  }
-  throw userError("Invalid PRR scheduling algorithm specified.");
-}
-
-schedulingAlgType wallet::getTaskSchedulingAlgType(std::string str) {
-  if (str == "fcfs") {
-    return FCFS;
-  }
-  throw userError("Invalid task scheduling algorithm specified.");
 }
 
 graph_ptr_t wallet::getTaskGraph(unsigned task_graph_id) {
@@ -459,7 +460,7 @@ void wallet::printDetails() {
 
   std::cout << "\n\t== APPLICATION LIST (with ID): ==\n";
   for (auto i = 0; i < applications_.size(); i++) {
-    std::cout << "\t\t" << i << ") '" << applications_[i]->name_ << "' <" << applications_[i]->file_ << ">\n";
+    std::cout << "\t\t" << i << ") '" << applications_[i]->name << "' <" << applications_[i]->file << ">\n";
     applications_[i]->printDetails(3);
   }
 
@@ -479,14 +480,14 @@ void wallet::printDetails() {
   std::cout << std::endl;
 }
 
-bool wallet::removeApplication(std::string filename) {
+bool wallet::removeApplication(const std::string& filename) {
   return wallet_file_handler_.removeFromFile("a: " + filename);
 }
 
-bool wallet::removeMemory(std::string filename) {
+bool wallet::removeMemory(const std::string& filename) {
   return wallet_file_handler_.removeFromFile("m: " + filename);
 }
 
-bool wallet::removeTaskGraphFile(std::string filename) {
+bool wallet::removeTaskGraphFile(const std::string& filename) {
   return wallet_file_handler_.removeFromFile("t: " + filename);
 }

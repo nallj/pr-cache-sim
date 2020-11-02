@@ -8,11 +8,11 @@
 
 // I need to know tha current status of the PRR controllers, and the relationship between tasks and bitstreams; the latter
 // of which is not yet expressed in the .app file. However, it can be done by having "rrX module Y tasks: task_t0, ..."
-class prrScheduling {
+class rrScheduling {
 protected:
   //prr_signlgs prrSIgnals
 
-  prrScheduling(const char* name, prr_signlgs prrSIgnals);
+  rrScheduling(const char* name, rr_signlgs prrSIgnals);
 
 public:
   const char* name_;

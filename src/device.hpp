@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <map> // map
-#include <memory> // shared_ptr
+#include <memory> // make_shared, shared_ptr
 #include <queue>
 #include <string>
 #include <stdio.h>
@@ -38,8 +38,8 @@ class device {
   double simulator_speed_;
   //application* simulated_application_;
   std::shared_ptr<nallj::graph> task_graph_;
-  icap* icap_;
-  prc* prc_;
+  std::shared_ptr<icap> icap_;
+  std::shared_ptr<prc> prc_;
 
   // memoryLevel& associativityToRegion(unsigned module_index);
   // memoryLevel& findInCache(unsigned module_index);
@@ -50,8 +50,8 @@ public:
   std::string name_, file_;
 
   void assignTaskGraph(std::shared_ptr<nallj::graph> task_graph);
-  void associateHierarchy(reconfigurableRegions memory_hierarchy);
-  bool prepareApplicationResources(application* app);
+  void associateHierarchy(reconfigurableRegions& memory_hierarchy);
+  bool prepareAppResources(std::shared_ptr<application> app);
   void simulateApplication(unsigned long long int stop_ccc = -1);
 };
 

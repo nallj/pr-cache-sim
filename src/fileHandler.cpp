@@ -212,7 +212,7 @@ bool fileHandler::removeFromFile(std::string line) {
 
 // Accessor Methods //
 
-bool fileHandler::isFileValid() { return is_valid_; }
+bool fileHandler::isFileValid() const { return is_valid_; }
 
 std::multimap<std::string, std::string> fileHandler::getParams() { return param_dictionary_; }
 

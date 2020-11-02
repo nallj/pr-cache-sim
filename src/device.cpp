@@ -4,7 +4,7 @@ void device::assignTaskGraph(std::shared_ptr<nallj::graph> task_graph) {
   task_graph_ = task_graph;
 }
 
-void device::associateHierarchy(reconfigurableRegions memory_hierarchy) {
+void device::associateHierarchy(reconfigurableRegions& memory_hierarchy) {
   memory_hierarchy_top_ = memory_hierarchy;
 
   storageUnit* ptr = &memory_hierarchy;
@@ -19,14 +19,14 @@ void device::associateHierarchy(reconfigurableRegions memory_hierarchy) {
  * @param app Application the device will prepare for.
  * @return if a this device is able to facilitate the given application.
  */
-bool device::prepareApplicationResources(application* app) {
+bool device::prepareAppResources(std::shared_ptr<application> app) {
 
   // instantiate all static regions with their module contents
-  auto static_module_counts = app->getStaticModules();
+  const auto& static_module_counts = app->static_modules;
 
   // iterate through each static region
-  auto static_it = static_module_counts->begin();
-  for (; static_it != static_module_counts->end(); static_it++) {
+  auto static_it = static_module_counts.begin();
+  for (; static_it != static_module_counts.end(); static_it++) {
 
     const auto& region_id = static_it->first;
     std::vector<module*> current_static_modules;
@@ -35,13 +35,13 @@ bool device::prepareApplicationResources(application* app) {
 
     // iterate through each module in the target static region
     for (auto i = 0; i < static_it->second; i++) {
-      current_static_modules.push_back(new module(i, 0, app->getStaticRegionSpeed()));
+      current_static_modules.push_back(new module(i, 0, app->simulator_speed));
 		}
 
     static_regions_.insert(std::pair<unsigned, std::vector<module*>>(region_id, current_static_modules));
   }
 
-  const auto rr_specs = app->getReconfigurableRegions();
+  const auto rr_specs = app->rr_spec_map;
 
   // iterate through each reconfigurable region; for each region, create a placeholder module
   unsigned required_bitstream_space = 0;
@@ -65,7 +65,6 @@ bool device::prepareApplicationResources(application* app) {
 
     // document the amount of modules in each region for later use
     prr_census_.insert(std::pair<unsigned, unsigned>(region_id, region_module_count));
-    // was prr_index_
 
     // instantiate the bitstream library as modules are iterated over
     for (const auto module_entry : module_specs) {
@@ -80,9 +79,10 @@ bool device::prepareApplicationResources(application* app) {
   // certain modules; fail if a level cant even hold one module
 
   prr_bitstream_sizes_ = app->getReconfigurableRegionBitstreamSizes();
-  simulator_speed_ = app->getSimulatorSpeed();
-  icap_ = app->getIcap();
-  prc_ = app->getPrc();
+  simulator_speed_ = app->simulator_speed;
+
+  icap_ = std::make_shared<icap>(app->icap_speed, app->icap_bus_width);
+  prc_ = std::make_shared<prc>(app->prc_speed, app->task_scheduling_alg, app->rr_scheduling_alg);
 
   // return true if the bitstream library can fit in the chosen main memory
   return main_memory->getSize() >= required_bitstream_space;

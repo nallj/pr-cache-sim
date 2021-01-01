@@ -212,6 +212,16 @@ bool fileHandler::removeFromFile(std::string line) {
 
 // Accessor Methods //
 
+// TODO: Consider performing formal YAML validation instead to offer more helpful error messages.
+bool fileHandler::isValidAppFile(const std::string application_file) {
+  try {
+    YAML::LoadFile(application_file).as<application>();
+  } catch (const std::exception& _) {
+    return false;
+  }
+  return true;
+}
+
 bool fileHandler::isFileValid() const { return is_valid_; }
 
 std::multimap<std::string, std::string> fileHandler::getParams() { return param_dictionary_; }

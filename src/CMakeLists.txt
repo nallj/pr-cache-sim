@@ -16,7 +16,6 @@ add_executable(drachma
   main.cpp
 	signalContext.cpp
   specs/application.cpp
-  specs/application-yaml.cpp
 	storage/memoryLevel.cpp
   storage/rrModule.cpp
   storage/reconfigurableRegions.cpp
@@ -24,6 +23,7 @@ add_executable(drachma
   traceToken.cpp
   userError.cpp
   wallet.cpp
+  yaml/application.cpp
 )
 
 target_compile_features(drachma PRIVATE cxx_std_20)

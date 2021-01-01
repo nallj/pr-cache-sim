@@ -1,17 +1,21 @@
 #ifndef NALLJ_DRACHMA_FILE_HANDLER
 #define NALLJ_DRACHMA_FILE_HANDLER
 
-#include <string>
-#include <vector>
-#include <iostream>
+#include <exception>
 #include <fstream>
+#include <iostream>
 #include <map>
-#include <string>
 #include <stdexcept> // invalid_argument
 #include <stdio.h>
+#include <string>
+#include <vector>
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/regex.hpp>
+#include <yaml-cpp/yaml.h> // YAML
+
+#include "specs/application.hpp"
+#include "yaml/application.hpp"
 
 #define COMMENT_TAG '#'
 #define LONG_COMMENT_TAG '/'
@@ -46,6 +50,7 @@ public:
   bool removeFromFile(std::string line); // TODO: not finished
 
   // Accessor Methods
+  static bool isValidAppFile(const std::string application_file);
   bool isFileValid() const;
   std::multimap<std::string, std::string> getParams();
   std::vector<std::string> getData();

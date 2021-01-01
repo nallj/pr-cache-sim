@@ -206,13 +206,7 @@ int main(int argc, char** argv) {
               valid_use = true;
 
               if (fileExists(app_file)) {
-                auto application_reader = fileHandler(
-                  app_file,
-                  library.getApplicationParamRules(),
-                  library.getApplicationRegexRules()
-                );
-
-                if (application_reader.isFileValid()) {
+                if (fileHandler::isValidAppFile(app_file)) {
                   library.addApplication(app_file);
 
                   std::cout << "Done!\n";
@@ -359,19 +353,10 @@ int main(int argc, char** argv) {
 
         // Unrecognized switch
         default:
-          const auto msg = "Invalid switch. Have some help:";
+          const auto msg = "Invalid switch. Here's some help:";
           throw userError(msg, displayHelp);
       }
     }
-  // } catch (const userError& e) {
-  //   std::cout << "\nERROR: " << e.what() << "\n\n";
-  //   e.showHelpIfProvided();
-  //   std::cout << std::endl;
-  //   return EXIT_FAILURE;
-
-  // } catch (const std::exception& e) {
-  //   throw e;
-  // }
 
 exit:
   std::cout << std::endl;

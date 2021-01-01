@@ -3,8 +3,8 @@
 
 #include <yaml-cpp/yaml.h> // convert, Node
 
-#include "application.hpp"
 #include "../components/prc.hpp" // rrSelectionType, taskSchedulingType
+#include "../specs/application.hpp"
 
 // yaml-cpp extension for deserializing the application class.
 namespace YAML {

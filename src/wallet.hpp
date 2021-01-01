@@ -24,12 +24,12 @@
 #include "device.hpp"
 #include "fileHandler.hpp"
 #include "specs/application.hpp"
-#include "specs/application-yaml.hpp"
 #include "storage/storageUnit.hpp"
 #include "storage/memoryLevel.hpp"
 #include "storage/reconfigurableRegions.hpp"
 #include "types.hpp"
 #include "userError.hpp"
+#include "yaml/application.hpp"
 
 using graph_ptr_t = std::shared_ptr<nallj::graph>;
 

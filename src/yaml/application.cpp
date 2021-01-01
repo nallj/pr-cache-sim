@@ -1,4 +1,4 @@
-#include "application-yaml.hpp"
+#include "application.hpp"
 
 taskSchedulingType getTasktaskSchedulingType(const std::string& str) {
   if (str == "fcfs") {

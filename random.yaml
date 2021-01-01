@@ -1,0 +1,185 @@
+
+---
+
+# Example Application File for Drachma
+name: Random Application (a made-up application)
+
+# Internal Configuration Access Port (ICAP)
+ICAP:
+  # The speed (in MHz) of the ICAP (required).
+  speed: 100.00
+  # The number of bits the ICAP can transfer per clock cycle (required).
+  width: 32
+
+# Partial Reconfiguration Controller (PRC)
+PRC:
+  # The speed (in MHz) of the PRC (required).
+  speed: 100.00
+
+#    [TODO] task scheduling:
+#     - fcfs (first come first serve)
+#      * no jobs: schedule first
+#      * jobs going 
+#     - sjn (shortest job next): naive
+#      * no jobs: schedule first
+#      * 4 jobs, 2 in contention
+#     - sjn (shortest job next): schedule contentious first
+#      * no jobs: schedule first
+#      * 4 jobs, 2 in contention
+#     - priority - requires that metadata has priortiy within them.
+#
+#     - rr (round-robin) - doesn't make sense since this is for scheduling tasks on a single core; without preemption this wont work.
+#     - "Weighted shortest job first" (WSJF) - too complicated of a scheduling algorithm to implement; jobs get weighted with the cost of delay so that the highest valued jobs get done sooner.
+#     - shortest remaining time first (SRTF) - cant be done because it requires preemption
+
+
+#    [TODO] rr selection policy:
+#      - lowest flexibility (LFT_FE): choose the RR that can support the least bitstreams leaving the more
+#        flexible RR free
+#      * what about selection policies that take into account cache? a lower cost than pulling fresh is pulling from cache
+#      * what about a task that can be done by two different implementations (2 diff bitstreams)
+
+
+task scheduling: fcfs
+rr selection policy: lf
+
+# Static Regions (SRs)
+
+# The speed (in MHz) of the SRs (required if declaring SRs).
+static region speed: 100.00
+SRs:
+  - id: 0
+    module count: 2
+  - id: 1
+    module count: 1
+
+# Amount of modules residing in a SR.
+#sr0 module count: 2
+#sr1 module count: 1
+
+# Reconfigurable Regions (RRs)
+
+RRs:
+  # RR 0
+  - id: 0
+    # Amount of bytes required from the ICAP to reconfigure the RRs.
+    bitstream size: 64 # 1024
+    # All module bitstreams designed to be installed into this RR.
+    modules:
+      # RR 0, Module 0
+      - id: 0
+        # The speed (in MHz) of the module.
+        speed: 100.00
+        # Which tasks does this module's design support.
+        task types:
+          - 0
+          - 1
+      # RR 0, Module 1
+      - id: 1
+        speed: 100.00
+        task types:
+          - 1
+          - 2
+      # RR 0, Module 2
+      - id: 2
+        speed: 100.00
+        task types:
+          - 1
+          - 2
+          - 3
+      # RR 0, Module 3
+      - id: 3
+        speed: 100.00
+        task types:
+          - 4
+          - 5
+      # RR 0, Module 4
+      - id: 4
+        speed: 100.00
+        task types:
+          - 1
+          - 2
+          - 4
+  # RR 1
+  - id: 1
+    bitstream size: 32 # 768
+    modules:
+      # RR 1, Module 0
+      - id: 0
+        speed: 100.00
+        task types:
+          - 6
+          - 7
+      # RR 1, Module 1
+      - id: 1
+        speed: 100.00
+        task types:
+          - 8
+          - 9
+      # RR 1, Module 2
+      - id: 2
+        speed: 100.00
+        task types:
+          - 6
+          - 7
+          - 8
+      # RR 1, Module 3
+      - id: 3
+        speed: 100.00
+        task types:
+          - 7
+          - 8
+  # RR 2
+  - id: 2
+    bitstream size: 16 # 512
+    modules:
+      # RR 2, Module 0
+      - id: 0
+        speed: 100.00
+        task types:
+          - 9
+          - 10
+      # RR 2, Module 1
+      - id: 1
+        speed: 100.00
+        task types:
+          - 10
+          - 11
+      # RR 2, Module 2
+      - id: 2
+        speed: 100.00
+        task types:
+          - 9
+          - 11
+  # RR 3
+  - id: 3
+    bitstream size: 8 # 256
+    modules:
+      # RR 3, Module 0
+      - id: 0
+        speed: 100.00
+        task types:
+          - 11
+          - 12
+      # RR 3, Module 1
+      - id: 1
+        speed: 100.00
+        task types:
+          - 11
+          - 13
+  # RR 4
+  - id: 4
+    bitstream size: 8 # 256
+    modules:
+      # RR 4, Module 0
+      - id: 0
+        speed: 100.00
+        task types:
+          - 13
+          - 14
+      # RR 4, Module 1
+      - id: 1
+        speed: 100.00
+        task types:
+          - 11
+          - 14

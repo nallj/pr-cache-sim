@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include "module.hpp"
+#include "rrModule.hpp"
 
 class memoryLevel;
 
@@ -17,7 +17,7 @@ protected:
   //void evictModule(unsigned table_index); // move to memoryLevel
 
   unsigned unit_size_;
-  //std::vector<module*> module_table_;
+  //std::vector<rrModule*> module_table_;
   //replAlg* replacement_alg_; // move to memoryLevel
   memoryLevel* child_unit_;
   unsigned short read_latency_;
@@ -41,13 +41,13 @@ public:
   virtual void printDetails() = 0;
   virtual void attemptModule(unsigned module_index) = 0;
   virtual bool isModulePresent(unsigned region_id, unsigned module_id) = 0;
-  virtual void insertModule(module* new_module) = 0;
-  //virtual module* getModule(unsigned module_id) = 0;
+  virtual void insertModule(rrModule* new_module) = 0;
+  //virtual rrModule* getModule(unsigned module_id) = 0;
 
   // Accessors //
   unsigned short getSize();
-  //std::vector<module*>& getModuleTable();
-  //module* getModule(unsigned module_index);
+  //std::vector<rrModule*>& getModuleTable();
+  //rrModule* getModule(unsigned module_index);
   memoryLevel* getChild();
   unsigned short getReadLatency();
   unsigned short getSearchLatency();

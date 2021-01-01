@@ -15,6 +15,8 @@
 #include <cppJsonGraph/deserializer.hpp>
 #include <cppJsonGraph/graph.hpp>
 
+#include <yaml-cpp/yaml.h>
+
 #include "algs/cache/fifoAlg.hpp" // fifo replacement
 //#include "algs/cache/randomAlg.hpp" // random replacement
 #include "components/icap.hpp"
@@ -22,12 +24,17 @@
 #include "device.hpp"
 #include "fileHandler.hpp"
 #include "specs/application.hpp"
+#include "specs/application-yaml.hpp"
 #include "storage/storageUnit.hpp"
 #include "storage/memoryLevel.hpp"
 #include "storage/reconfigurableRegions.hpp"
+#include "types.hpp"
 #include "userError.hpp"
 
 using graph_ptr_t = std::shared_ptr<nallj::graph>;
+
+// template<>
+// struct YAML::convert<application>;
 
 // wallet acts as a library for drachma
 class wallet {
@@ -53,7 +60,7 @@ class wallet {
     "icap width",
     "icap speed",
     "prc speed",
-    "prr selection policy",
+    "rr selection policy",
     "task scheduling",
     "static region speed"
   };
@@ -61,7 +68,7 @@ class wallet {
     "\\bsr\\d+ \\bmodule count\\b[:] \\d+",
     "\\brr\\d+\\b \\bbitstream size\\b[:] \\d+",
     "\\brr\\d+\\b \\bmodule \\d+ speed\\b[:] \\d+[.]\\d{1,2}",
-    "\\brr\\d+\\b \\bmodule \\d+ tasks\\b[:] [^,\\n]+(, *[^,\\n ]+)*"
+    "\\brr\\d+\\b \\bmodule \\d+ task types\\b[:] [^,\\n]+(, *[^,\\n ]+)*"
   };
 
   std::vector<std::string> trace_params_ { "name" };

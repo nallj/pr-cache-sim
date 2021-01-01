@@ -11,12 +11,18 @@
 #include <cppJsonGraph/graph.hpp>
 
 #include "../globals.hpp"
+#include "../signalContext.hpp"
 #include "../traceToken.hpp"
-#include "../algs/task/fcfsAlg.hpp"
-#include "../algs/task/schedulingAlg.hpp"
+#include "../algs/bitstream/lftFeSelector.hpp"
+#include "../algs/bitstream/bitstreamSelector.hpp"
+#include "../algs/task/fcfsScheduler.hpp"
+#include "../algs/task/taskScheduler.hpp"
 #include "../storage/memoryLevel.hpp"
 #include "../storage/reconfigurableRegions.hpp"
+#include "../types.hpp"
 #include "prrLevelController.hpp"
+
+class signalContext;
 
 enum prcState {
   // PRC_INIT,
@@ -29,20 +35,21 @@ enum prcState {
   // SEARCH_WAIT
 
   PRC_INIT,
-  PRC_SCHEDULE,
+  PRC_TASK_SCHEDULE,
+  PRC_RR_SCHEDULE,
   PRC_REQ_ICAP,
-  PRC_ICAP_WAIT,
+  // PRC_ICAP_WAIT,
   
 };
 
-enum schedulingAlgType {
+enum taskSchedulingType {
   FCFS // First Come, First Serve
   // SJN, // Shortest Job Next
   // PRIORITY
 };
 
-enum rrSelectionPolicyType {
-  LF
+enum rrSelectionType {
+  LFT_FE
 };
 
 class prc {
@@ -73,23 +80,28 @@ class prc {
   // traceToken* current_trace_;
   // std::shared_ptr<nallj::graph> task_graph_;
 
-  traceToken** icap_current_trace_ptr_;
-  rrSelectionPolicyType prr_sel_policy_type_;
-  schedulingAlgType scheduling_alg_type_;
-  std::unique_ptr<schedulingAlg> scheduling_alg_;
+  // traceToken** icap_current_trace_ptr_;
+
+  rrSelectionType bs_sel_policy_type_;
+  std::unique_ptr<bitstreamSelector> bs_sel_policy_;
+  taskSchedulingType scheduling_alg_type_;
+  std::unique_ptr<taskScheduler> scheduling_alg_;
+  taskRrLookupMap_t bs_capabilites_;
 
 public:
-  prc(double prc_speed, schedulingAlgType scheduling_alg_type, rrSelectionPolicyType prr_sel_policy);
+  prc(
+    double prc_speed,
+    taskSchedulingType scheduling_alg_type,
+    rrSelectionType pbs_sel_policy
+  );
   ~prc();
 
   void connect(
     std::vector<storageUnit*>* memory_hierarchy,
     reconfigurableRegions* memory_hierarchy_top,
     std::shared_ptr<nallj::graph> task_graph,
-    std::deque<bool>* prr_executing,
-    bool* prr_ack,
-    bool* icap_ack,
-    bool* icap_trans
+    const taskRrLookupMap_t& bs_capabilites,
+    signalContext& signals
   );
 
   void step();

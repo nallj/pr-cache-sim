@@ -1,5 +1,5 @@
-#ifndef NALLJ_DRACHMA_FCFS_ALG
-#define NALLJ_DRACHMA_FCFS_ALG
+#ifndef NALLJ_DRACHMA_FCFS_SCHEDULER
+#define NALLJ_DRACHMA_FCFS_SCHEDULER
 
 #include <deque> // deque
 #include <memory> // shared_ptr
@@ -10,13 +10,13 @@
 
 #include <cppJsonGraph/graphNode.hpp>
 
-#include "schedulingAlg.hpp"
+#include "taskScheduler.hpp"
 
 using graph = nallj::graph;
 using graphNode = nallj::graphNode;
 using nodePair = std::pair<std::string, graphNode>;
 
-class fcfsAlg : public schedulingAlg {
+class fcfsScheduler : public taskScheduler {
 
   std::deque<nodePair> task_queue_;
   // Used for keeping track of tasks already added to the queue.
@@ -28,13 +28,15 @@ class fcfsAlg : public schedulingAlg {
   // internal pointers n stuff
 
   void initialize();
+  void removeCurrentTask();
 
 public:
-  fcfsAlg(std::shared_ptr<nallj::graph> task_graph);
+  fcfsScheduler(std::shared_ptr<nallj::graph> task_graph);
 
   // TODO: Do I need both peek methods?
   std::string peekCurrentTaskId();
   graphNode& peekCurrentTask();
+  // TODO: Who is the audience for this task?
   void blockCurrentTask();
   void prepareNextTask();
   // void unblock(key)

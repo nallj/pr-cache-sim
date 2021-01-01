@@ -52,12 +52,12 @@ void memoryLevel::attemptModule(unsigned module_index) { // attempt an insert; u
 
 bool memoryLevel::isModulePresent(unsigned region_id,unsigned module_id) {
 
-  std::map<unsigned, std::map<unsigned, module*>>::iterator region_it
+  std::map<unsigned, std::map<unsigned, rrModule*>>::iterator region_it
     = module_reference_table_.find(region_id);
 
   if (region_it != module_reference_table_.end()) {
 
-    std::map<unsigned, module*>::iterator module_it
+    std::map<unsigned, rrModule*>::iterator module_it
       = region_it->second.find(module_id);
 
     if (module_it != region_it->second.end())
@@ -67,12 +67,12 @@ bool memoryLevel::isModulePresent(unsigned region_id,unsigned module_id) {
   return false;
 }
 
-void memoryLevel::insertModule(module* new_module) {
+void memoryLevel::insertModule(rrModule* new_module) {
 
   unsigned region_id = new_module->getRegionId();
   unsigned module_id = new_module->getModuleId();
 
-  std::map<unsigned, std::map<unsigned, module*>>::iterator region_it
+  std::map<unsigned, std::map<unsigned, rrModule*>>::iterator region_it
     = module_reference_table_.find(region_id);
 
   if (region_it == module_reference_table_.end())
@@ -86,9 +86,9 @@ void memoryLevel::insertModule(module* new_module) {
 // Operational Methods (unique) //
 bool memoryLevel::isLutIndexed() {
   return contents_lut_indexed_;
-};
+}
 
-module* memoryLevel::getModule(unsigned region_id, unsigned module_id) {
+rrModule* memoryLevel::getModule(unsigned region_id, unsigned module_id) {
   return module_reference_table_[region_id][module_id];
 }
 

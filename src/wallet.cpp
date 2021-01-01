@@ -46,13 +46,6 @@ wallet::wallet() {
 
 /* Helper Functions */
 
-rrSelectionPolicyType getRrSchedulingPolicyType(const std::string& str) {
-  if (str == "lf") {
-    return LF;
-  }
-  throw userError("Invalid PRR scheduling algorithm specified.");
-}
-
 long getModuleIdFromAppParamLine(const std::string& param) {
   const auto start = param.find("module ") + 7;
   const auto end = param.find(" ", start);
@@ -78,13 +71,6 @@ long getSrIdFromAppParamLine(const std::string& param) {
   const auto end = param.find(" ");
   const auto sr_id = param.substr(2, end - 2);
   return std::stol(sr_id);
-}
-
-schedulingAlgType getTaskSchedulingAlgType(const std::string& str) {
-  if (str == "fcfs") {
-    return FCFS;
-  }
-  throw userError("Invalid task scheduling algorithm specified.");
 }
 
 void pushCommaDelimitedElements(std::vector<std::string>& list, const std::string str) {
@@ -250,141 +236,11 @@ reconfigurableRegions wallet::buildMemoryHierarchy(const std::string& memory_fil
 
 std::shared_ptr<application> wallet::createApplication(const std::string& application_file) {
 
-  auto application_reader = fileHandler(application_file, application_params_, application_regex_);
+  const auto& app = YAML::LoadFile(application_file).as<application>();
+  const auto app_ptr = std::make_shared<application>(app);
 
-  if (!application_reader.isFileValid()) {
-    throw userError("Application file is corrupt.");
-  }
-
-  // start by retrieving the basic application parameters
-  auto statically_defined_params = application_reader.getParams();
-
-  // Get ICAP-related parameters.
-  const auto icap_speed = std::stod(getParamFromMap(statically_defined_params, "icap speed"));
-  const auto icap_width = std::stol(getParamFromMap(statically_defined_params, "icap width"));
-
-  // Get all PRC-related parameters.
-  const auto prc_speed = std::stod(getParamFromMap(statically_defined_params, "prc speed"));
-  const auto task_scheduling_type = getParamFromMap(statically_defined_params, "task scheduling");
-  const auto rr_scheduling_alg_type = getParamFromMap(
-    statically_defined_params,
-    "prr selection policy"
-  );
-
-  // Get appropriate types for some of the PRC-related parameters.
-  const auto task_scheduling_alg = getTaskSchedulingAlgType(task_scheduling_type);
-  const auto rr_scheduling_alg = getRrSchedulingPolicyType(rr_scheduling_alg_type);
-
-  // get static region speed, if a static region has been defined
-  std::string static_region_speed = "";
-  auto sr_speed_specified = false;
-
-  if (statically_defined_params.find("static region speed") != statically_defined_params.end()) {
-    static_region_speed = getParamFromMap(statically_defined_params, "static region speed");
-    sr_speed_specified = true;
-  }
-
-  // speed of fastest module dictates the speed of the simulator. start search with static region.
-  auto fastest_module_speed = std::stod(static_region_speed);
-
-  std::multimap<unsigned, unsigned> static_modules;
-
-  rrSpecMap_t rr_spec_map;
-  std::unordered_map<unsigned, unsigned> rr_bitstream_sizes;
-  std::unordered_map<unsigned, bool> rr_bitstream_size_set;
-
-  // start parsing the arbitrary amounts of static and reconfigurable regions
-  auto dynamically_declared_params = application_reader.getData();
-  for (auto i = 0; i < dynamically_declared_params.size(); i++) {
-    //std::cout << dynamically_declared_params[i] << "\n";
-
-    // get the parameter and the corresponding argument
-    const auto param = dynamically_declared_params[i].substr(0, dynamically_declared_params[i].find(":"));
-    const auto arg = dynamically_declared_params[i].substr(dynamically_declared_params[i].find(":") + 2);
-
-    // handle static region parameters
-    if (param.substr(0, 2) == "sr") {
-      if (!sr_speed_specified) {
-        throw userError("Static regions specified without speed.");
-      }
-      const auto sr_id = getSrIdFromAppParamLine(param);
-      static_modules.emplace(sr_id, std::stol(arg));
-    }
-
-    // Handle reconfigurable region parameters.
-    if (param.substr(0, 2) == "rr") {
-      const auto rr_id = getRrIdFromAppParamLine(param);
-
-      // Bitstream size; it's the only RR parameter that isn't module specific.
-      if (stringContains(param, "bitstream")) {
-        rr_bitstream_sizes[rr_id] = std::stoul(arg);
-        rr_bitstream_size_set[rr_id] = true;
-  
-      // Module-related parameters.
-      } else {
-        const auto module_id = getModuleIdFromAppParamLine(param);
-        auto& module_spec_map = rr_spec_map[rr_id];
-        auto& module_spec = module_spec_map[module_id];
-
-        // These will be assigned multiple times, but it's cheaper than branching.
-        module_spec.region_id = rr_id;
-        module_spec.id = module_id;
-
-        if (stringContains(param, "speed")) {
-          const auto module_speed = std::stod(arg);
-
-          module_spec.speed = module_speed;
-
-          // Keep record of the fastest module.
-          if (module_speed > fastest_module_speed) {
-            fastest_module_speed = module_speed;
-          }
-        // Module tasks
-        } else if (stringContains(param, "tasks")) {
-          pushCommaDelimitedElements(module_spec.task_ids, arg);
-        
-        // Something went wrong.
-        } else {
-          throw std::runtime_error("Unkown application parameter passed.");
-        }
-      }
-    }
-  }
-
-  // Loop over the modules and assign their bitstream sizes.
-  for (auto& rr_entry : rr_spec_map) {
-    const auto rr_id = rr_entry.first;
-
-    // Asset that the bitstream size has been set for this RR.
-    if (!rr_bitstream_size_set[rr_id]) {
-      const auto msg = "No bitstream size specified for RR " + std::to_string(rr_id);
-      throw userError(msg);
-    }
-
-    for (auto& module_entry : rr_entry.second) {
-      const auto module_id = module_entry.first;
-      auto& module_spec = module_entry.second;
-
-      const auto module_bitstream_size = rr_bitstream_sizes[rr_id];
-      module_spec.bitstream_width = module_bitstream_size;
-    }
-  }
-
-  const auto new_app = std::make_shared<application>(
-    icap_speed,
-    icap_width,
-    prc_speed,
-    task_scheduling_alg,
-    rr_scheduling_alg,
-    std::stod(static_region_speed),
-    static_modules,
-    rr_spec_map,
-    fastest_module_speed
-  );
-  new_app->name = getParamFromMap(statically_defined_params, "name");
-  new_app->file = application_file;
-
-  return new_app;
+  app_ptr->file = application_file;
+  return app_ptr;
 }
 
 graph_ptr_t wallet::createTaskGraph(const std::string& tg_file) {

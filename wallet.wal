@@ -9,7 +9,7 @@
 name: My Drachma Wallet
 
 # m: memory.mem
-# a: application.app
+# a: application.yaml
 # t: tasks.json
 
 # Memory Hierarchies
@@ -17,7 +17,7 @@ m: realistic.mem
 m: simplified.mem
 
 # Applications
-a: random.app
+a: random.yaml
 
 # Task Graphs
 t: simple0.json

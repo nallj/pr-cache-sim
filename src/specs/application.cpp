@@ -1,11 +1,13 @@
 #include "application.hpp"
 
+application::application() {}
+
 application::application(
   const double icap_speed,
   const unsigned icap_bus_width,
   const double prc_speed,
-  const schedulingAlgType task_scheduling_alg,
-  const rrSelectionPolicyType rr_scheduling_alg,
+  const taskSchedulingType task_scheduling_alg,
+  const rrSelectionType rr_scheduling_alg,
   const double static_region_speed,
   const srMap_t& static_modules,
   const rrSpecMap_t& rr_spec_map,
@@ -27,24 +29,58 @@ void printIndentation(unsigned indents) {
 
 /* Methods */
 
-bitstreamSizeMap_t application::getReconfigurableRegionBitstreamSizes() {
+bitstreamSizeMap_t application::getRrBitstreamSizes() {
   bitstreamSizeMap_t rr_bitstream_sizes;
   rr_bitstream_sizes.reserve(rr_spec_map.size());
 
   // Gather the RR's bitstream sizes from the first module of each RR.
   for (const auto rr : rr_spec_map) {
     const auto rr_id = rr.first;
+    const auto& module_map = rr.second;
 
     // Assert that the current RR has at least one entry.
-    if (rr.second.size() == 0) {
+    if (module_map.size() == 0) {
       throw std::runtime_error("Target RR has no modules to draw data from.");
     }
 
     // Get the RR's bitstream size from one of its modules.
-    const auto bitstream_size = rr.second.begin()->second.bitstream_width;
+    const auto bitstream_size = module_map.begin()->second.bitstream_width;
     rr_bitstream_sizes[rr_id] = bitstream_size;
   }
   return rr_bitstream_sizes;
+}
+
+/**
+ * Get a 2D lookup map for which tasks can be contained within which RRs and for which bitsreams.
+ * @return a map[task_type_id][rr_id] with module ID lists as elements.
+ */
+taskRrLookupMap_t application::getRrTaskCapabilites() {
+  taskRrLookupMap_t bs_capabilities;
+
+  for (const auto rr : rr_spec_map) {
+    const auto rr_id = rr.first;
+    const auto& module_map = rr.second;
+
+    // Assert that the current RR has at least one entry.
+    if (module_map.size() == 0) {
+      throw std::runtime_error("Target RR has no modules to draw data from.");
+    }
+
+    for (const auto rr_module : module_map) {
+      const auto module_id = rr_module.first;
+      const auto& task_types = rr_module.second.task_type_ids;
+
+      // Assert that the current module supports at least one task.
+      if (task_types.size() == 0) {
+        throw std::runtime_error("Target module doesn't support any tasks.");
+      }
+
+      for (const auto type_id : task_types) {
+        bs_capabilities[type_id][rr_id].push_back(module_id);
+      }
+    }
+  }
+  return bs_capabilities;
 }
 
 void application::printDetails(unsigned indents) {

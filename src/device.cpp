@@ -21,7 +21,7 @@ void device::associateHierarchy(reconfigurableRegions& memory_hierarchy) {
  */
 bool device::prepareAppResources(std::shared_ptr<application> app) {
 
-  // instantiate all static regions with their module contents
+  // instantiate all static regions with their rrModule contents
   const auto& static_module_counts = app->static_modules;
 
   // iterate through each static region
@@ -29,16 +29,16 @@ bool device::prepareAppResources(std::shared_ptr<application> app) {
   for (; static_it != static_module_counts.end(); static_it++) {
 
     const auto& region_id = static_it->first;
-    std::vector<module*> current_static_modules;
+    std::vector<rrModule*> current_static_modules;
 
     // TODO: consider allowing for each static region to have its' own speed
 
     // iterate through each module in the target static region
     for (auto i = 0; i < static_it->second; i++) {
-      current_static_modules.push_back(new module(i, 0, app->simulator_speed));
+      current_static_modules.push_back(new rrModule(i, 0, app->simulator_speed));
 		}
 
-    static_regions_.insert(std::pair<unsigned, std::vector<module*>>(region_id, current_static_modules));
+    static_regions_.insert(std::pair<unsigned, std::vector<rrModule*>>(region_id, current_static_modules));
   }
 
   const auto rr_specs = app->rr_spec_map;
@@ -55,8 +55,8 @@ bool device::prepareAppResources(std::shared_ptr<application> app) {
     const auto module_specs = it->second;
     const auto bitstream_width = module_specs.begin()->second.bitstream_width;
 
-    // at the PRR level, insert a placeholder module
-    const auto new_mod = new module(region_id, -1, 0, 0);
+    // Insert a placeholder module at the RR level.
+    const auto new_mod = new rrModule(region_id);
     memory_hierarchy_top_.insertModule(new_mod);
 
     // track the amount of space required for the main memory to store all reconfigurable modules
@@ -64,22 +64,27 @@ bool device::prepareAppResources(std::shared_ptr<application> app) {
     required_bitstream_space += region_module_count * bitstream_width;
 
     // document the amount of modules in each region for later use
-    prr_census_.insert(std::pair<unsigned, unsigned>(region_id, region_module_count));
+    rr_census_.insert(std::pair<unsigned, unsigned>(region_id, region_module_count));
 
-    // instantiate the bitstream library as modules are iterated over
+    // Instantiate the bitstream library.
     for (const auto module_entry : module_specs) {
       const auto spec = module_entry.second;
+      const auto& task_types = spec.task_type_ids;
 
-      const auto rr_space = new module(region_id, spec.id, bitstream_width, spec.speed);
-      main_memory->insertModule(rr_space);
+      // Create a bitstream that implements each task type.
+      for (const auto task_type : task_types) {
+        const auto rr_space = new rrModule(region_id, spec.id, bitstream_width, spec.speed, task_type);
+        main_memory->insertModule(rr_space);
+      }
     }
   }
 
   // TODO: check each cache level and warn the user if there is not enough space for
   // certain modules; fail if a level cant even hold one module
 
-  prr_bitstream_sizes_ = app->getReconfigurableRegionBitstreamSizes();
+  prr_bitstream_sizes_ = app->getRrBitstreamSizes();
   simulator_speed_ = app->simulator_speed;
+  bs_capabilites_ = app->getRrTaskCapabilites();
 
   icap_ = std::make_shared<icap>(app->icap_speed, app->icap_bus_width);
   prc_ = std::make_shared<prc>(app->prc_speed, app->task_scheduling_alg, app->rr_scheduling_alg);
@@ -88,14 +93,14 @@ bool device::prepareAppResources(std::shared_ptr<application> app) {
   return main_memory->getSize() >= required_bitstream_space;
 }
 
-void device::simulateApplication(unsigned long long int stop_ccc) {
+void device::simulateApplication(const unsigned long long int stop_ccc) {
 
   // Simulator clock cycle count
   unsigned long long int ccc = 0;
   unsigned long long int max_ccc = -1;
 
   // Get the PRR count.
-  const auto prr_count = prr_census_.size();
+  const auto prr_count = rr_census_.size();
 
   std::cout << "\nINFO: Simulator will execute at a rate of " << simulator_speed_ << " MHz.\n";
 
@@ -110,29 +115,15 @@ void device::simulateApplication(unsigned long long int stop_ccc) {
   // Create a signal context which will be used to "parallelize" the simulation actions.
   auto simulation_context = signalContext(&prr_level_controllers, prc_, icap_);
 
-  // TODO: Pass in the simulation context instead of the individual signals.
-  // Wire up the PRC.
+  // Wire up the PRC and ICAP.
   prc_->connect(
-		&memory_hierarchy_,
-		&memory_hierarchy_top_,
-		task_graph_,
-    simulation_context.accessContextSignalBus(PRR_EXE),
-    simulation_context.accessContextSignal(PRR_PRC_ACK),
-    simulation_context.accessContextSignal(ICAP_PRC_ACK),
-    simulation_context.accessContextSignal(ICAP_TRANSFER_PRR)
-	);
-
-  // TODO: Pass in the simulation context instead of the individual signals.
-  // Wire up the ICAP.
-  icap_->connect(
-		&memory_hierarchy_,
-		&memory_hierarchy_top_,
-		simulation_context.accessContextSignalBus(PRR_EXE),
-		simulation_context.accessContextCurrentTrace(true),
-		simulation_context.accessContextCounterSignal(PRC_MC),
-		simulation_context.accessContextSignal(PRC_ICAP_REQ),
-		simulation_context.accessContextSignal(PRR_ICAP_ACK)
-	);
+    &memory_hierarchy_,
+    &memory_hierarchy_top_,
+    task_graph_,
+    bs_capabilites_,
+    simulation_context
+  );
+  icap_->connect(&memory_hierarchy_, &memory_hierarchy_top_, simulation_context);
 
   // Inform the ICAP of the bitstream sizes for each of the reconfigurable regions.
   icap_->setRegionWidths(prr_bitstream_sizes_);
@@ -150,7 +141,6 @@ void device::simulateApplication(unsigned long long int stop_ccc) {
       simulation_context.accessContextCurrentTrace(false)
 		);
 	}
-
 
   // Main simulation loop
   unsigned long *trace_pointer;

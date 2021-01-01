@@ -11,7 +11,8 @@
 
 #include "../globals.hpp"
 
-class module {
+// TODO: Consider name change to just "module;" used for SRs as well.
+class rrModule {
 
   moduleState current_state_;
   unsigned region_id_;
@@ -19,17 +20,25 @@ class module {
   unsigned bitstream_width_;
   bool executing_;
   double operating_speed_;
+  std::string task_type_;
   unsigned long long execution_start_cycle_;
   unsigned long execution_time_;
   unsigned execution_latency_;
   unsigned long internal_timestep_;
   bool in_simulation_;
-  std::vector<std::string> task_ids_;
+  std::vector<std::string> task_type_ids_;
 
 public:
-  module();
-  module(unsigned id, unsigned bitstream_width, double speed);
-  module(unsigned region_id, unsigned module_id, unsigned bitstream_width, double speed);
+  rrModule();
+  rrModule(unsigned region_id);
+  rrModule(unsigned id, unsigned bitstream_width, double speed);
+  rrModule(
+    unsigned region_id,
+    unsigned module_id,
+    unsigned bitstream_width,
+    double speed,
+    std::string task_type
+  );
 
   moduleState getModuleState() const;
   unsigned getRegionId() const;
@@ -37,7 +46,7 @@ public:
   void setId(unsigned id);
   void setRrId(unsigned rr_id);
   void setSpeed(double speed);
-  void setTasks(std::vector<std::string> task_ids);
+  void setTasks(std::vector<std::string> task_type_ids);
   unsigned getSize() const;
   double getSpeed() const;
   unsigned getCurrentTimestep() const;

@@ -10,7 +10,7 @@ class memoryLevel : public storageUnit {
 
   replAlg* replacement_alg_;
   bool contents_lut_indexed_;
-  std::map<unsigned, std::map<unsigned, module*>> module_reference_table_;
+  std::map<unsigned, std::map<unsigned, rrModule*>> module_reference_table_;
 
 public:
   memoryLevel();
@@ -38,14 +38,14 @@ public:
   void printDetails();
 
   //void attemptModule(unsigned module_index);
-  // never should happen unless you're trying to bring down a module (read done, now copy)
+  // never should happen unless you're trying to bring down a rrModule (read done, now copy)
   void attemptModule(unsigned module_index);
   bool isModulePresent(unsigned region_id,unsigned module_id);
-  void insertModule(module* new_module);
+  void insertModule(rrModule* new_module);
 
   // Operational Methods (unique) //
   bool isLutIndexed();
-  module* getModule(unsigned region_id, unsigned module_id);
+  rrModule* getModule(unsigned region_id, unsigned module_id);
   bool hasSpace();
   void evictModule(unsigned table_index);
 };

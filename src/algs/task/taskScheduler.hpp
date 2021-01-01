@@ -1,21 +1,21 @@
-#ifndef NALLJ_DRACHMA_SCHEDULING_ALG
-#define NALLJ_DRACHMA_SCHEDULING_ALG
+#ifndef NALLJ_DRACHMA_TASK_SCHEDULER
+#define NALLJ_DRACHMA_TASK_SCHEDULER
 
 #include <memory> // make_unique, unique_ptr
 
 #include <cppJsonGraph/graph.hpp>
 #include <cppJsonGraph/graphNode.hpp>
 
-class schedulingAlg {
+class taskScheduler {
 protected:
   std::shared_ptr<nallj::graph> task_graph_;
 
-  schedulingAlg(const char* name, std::shared_ptr<nallj::graph> task_graph);
+  taskScheduler(const char* name, std::shared_ptr<nallj::graph> task_graph);
 
 public:
   const char* name_;
 
-  virtual ~schedulingAlg();
+  virtual ~taskScheduler();
 
   virtual std::string peekCurrentTaskId() = 0;
   virtual nallj::graphNode& peekCurrentTask() = 0;

@@ -21,7 +21,7 @@ icap::icap(double speed, unsigned bus_width) :
   
 icap::~icap() { };
 
-void icap::setRegionWidths(std::unordered_map<unsigned, unsigned> region_width) {
+void icap::setRegionWidths(bitstreamSizeMap_t region_width) {
   region_width_ = region_width;
 }
 
@@ -32,27 +32,23 @@ void icap::setSimulationSpeed(double sim_speed) {
 void icap::connect(
   std::vector<storageUnit*>* memory_hierarchy,
   reconfigurableRegions* prrs,
-  std::deque<bool>* prr_executing,
-  traceToken** current_trace_ptr,
-  unsigned* prc_mc,
-  bool* prc_req,
-  bool* prr_ctrl_ack
+  signalContext& signals
 ) {
 
   memory_hierarchy_ = memory_hierarchy;
 
   prrs_ = prrs;
-  prr_executing_ = prr_executing;
+  prr_executing_ = signals.accessContextSignalBus(PRR_EXE);
 
   for (unsigned i = 0; i < prr_executing_->size(); i++) {
     prr_ctrl_req_.push_back(false);
   }
 
-  current_trace_ptr_ = current_trace_ptr;
+  current_trace_ptr_ = signals.accessContextCurrentTrace(true);
 
-  prc_mc_ = prc_mc;
-  prc_req_ = prc_req;
-  prr_ctrl_ack_ = prr_ctrl_ack;
+  prc_mc_ = signals.accessContextCounterSignal(PRC_MC);
+  prc_req_ = signals.accessContextSignal(PRC_ICAP_REQ);
+  prr_ctrl_ack_ = signals.accessContextSignal(PRR_ICAP_ACK);
 }
 
 void icap::step() {

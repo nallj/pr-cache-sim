@@ -35,13 +35,13 @@ name: Random Application (a made-up application)
       * 4 jobs, 2 in contention
      - priority - requires that metadata has priortiy within them.
 
-     - rr (round-robin) - doesn't make sense since this is for scheduling tasks on a single core; it is not trivial to 
+     - rr (round-robin) - doesn't make sense since this is for scheduling tasks on a single core; without preemption this wont work.
      - "Weighted shortest job first" (WSJF) - too complicated of a scheduling algorithm to implement; jobs get weighted with the cost of delay so that the highest valued jobs get done sooner.
      - shortest remaining time first (SRTF) - cant be done because it requires preemption
 
-    [TODO] prr selection policy:
-      - lowest flexibility (LF): choose the PRR that can support the least bitstreams leaving the more
-        flexible PRR free
+    [TODO] rr selection policy:
+      - lowest flexibility (LFT_FE): choose the RR that can support the least bitstreams leaving the more
+        flexible RR free
       * what about selection policies that take into account cache? a lower cost than pulling fresh is pulling from cache
       * what about a task that can be done by two different implementations (2 diff bitstreams)
 
@@ -71,22 +71,34 @@ icap width: 32
 prc speed: 100.00
 
 task scheduling: fcfs
-prr selection policy: lf
+rr selection policy: lf
+
+
+# Static Regions
 
 static region speed: 100.00
 sr0 module count: 2
 sr1 module count: 1
 
+
+# RR 0
+
 # rr0 bitstream size: 1024
 rr0 bitstream size: 64
 rr0 module 0 speed: 100.00
-
-#rr0 module 0 tasks: task_0
-
 rr0 module 1 speed: 100.00
 rr0 module 2 speed: 100.00
 rr0 module 3 speed: 100.00
 rr0 module 4 speed: 100.00
+
+rr0 module 0 task types: 0, 1
+rr0 module 1 task types: 1, 2
+rr0 module 2 task types: 2, 3, 1
+rr0 module 3 task types: 4, 5
+rr0 module 4 task types: 1, 4, 2
+
+
+# RR 1
 
 # rr1 bitstream size: 768
 rr1 bitstream size: 32
@@ -95,43 +107,42 @@ rr1 module 1 speed: 100.00
 rr1 module 2 speed: 100.00
 rr1 module 3 speed: 100.00
 
+rr1 module 0 task types: 6, 7
+rr1 module 1 task types: 8, 9
+rr1 module 2 task types: 6, 7, 8
+rr1 module 3 task types: 7, 8
+
+
+# RR 2
+
 # rr2 bitstream size: 512
 rr2 bitstream size: 16
 rr2 module 0 speed: 100.00
 rr2 module 1 speed: 100.00
 rr2 module 2 speed: 100.00
 
+rr2 module 0 task types: 9, 10
+rr2 module 1 task types: 10, 11
+rr2 module 2 task types: 9, 11
+
+
+# RR 3
+
 # rr3 bitstream size: 256
 rr3 bitstream size: 8
 rr3 module 0 speed: 100.00
 rr3 module 1 speed: 100.00
+
+rr3 module 0 task types: 11, 12
+rr3 module 1 task types: 11, 13
+
+
+# RR 4
 
 # rr4 bitstream size: 256
 rr4 bitstream size: 8
 rr4 module 0 speed: 100.00
 rr4 module 1 speed: 100.00
 
-
-
-
-
-###### TODO SECTION ######
-
-
-
-########## DO NOT USE ###################
-############### NEW SECTION
-
-# Task Declarations (what type of IP are used in this application?)
-
-# T1: Blah 1
-# ...
-# T9: Blah 9
-
-# Which RRs have bitstreams making IP available to the RR
-
-# rr0 t1 t3 t7 t9
-# ...
-# rr4 t1 t2 t6   
-
-
+rr4 module 0 task types: 13, 14
+rr4 module 1 task types: 11, 14

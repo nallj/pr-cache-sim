@@ -24,15 +24,17 @@
 #include "storage/storageUnit.hpp"
 #include "storage/memoryLevel.hpp"
 #include "storage/reconfigurableRegions.hpp"
+#include "types.hpp"
 
 //enum memAction { SEARCH, TRANSFER, EXECUTE, VACANT, IDLE, UNKNOWN };
 
 class device {
 
-  std::multimap<unsigned, std::vector<module*>> static_regions_;
+  std::multimap<unsigned, std::vector<rrModule*>> static_regions_;
   //std::map<unsigned, unsigned> prr_index_;
-  std::map<unsigned, unsigned> prr_census_;
-  std::unordered_map<unsigned, unsigned> prr_bitstream_sizes_;
+  std::map<unsigned, unsigned> rr_census_;
+  bitstreamSizeMap_t prr_bitstream_sizes_;
+  taskRrLookupMap_t bs_capabilites_;
   std::vector<storageUnit*> memory_hierarchy_;
   reconfigurableRegions memory_hierarchy_top_;
   double simulator_speed_;
@@ -44,7 +46,7 @@ class device {
   // memoryLevel& associativityToRegion(unsigned module_index);
   // memoryLevel& findInCache(unsigned module_index);
   //std::tuple<unsigned, unsigned, unsigned> parseTrace(std::string trace);
-  // module* getBitstreamFromLibrary(unsigned region_id, unsigned module_id);
+  // rrModule* getBitstreamFromLibrary(unsigned region_id, unsigned module_id);
 
 public:
   std::string name_, file_;
@@ -52,7 +54,7 @@ public:
   void assignTaskGraph(std::shared_ptr<nallj::graph> task_graph);
   void associateHierarchy(reconfigurableRegions& memory_hierarchy);
   bool prepareAppResources(std::shared_ptr<application> app);
-  void simulateApplication(unsigned long long int stop_ccc = -1);
+  void simulateApplication(const unsigned long long int stop_ccc = -1);
 };
 
 #endif

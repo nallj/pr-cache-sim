@@ -58,6 +58,13 @@ name: Realistic Memory Configuration
 #/
 
 main name: DDR RAM
+/#
+  actually, SPI/BPI Flash memory
+  see UG909, p.116
+  "SPI and BPI flash can be used to store partial bitstreams, ..."
+
+  how to store in DRR? https://forums.xilinx.com/t5/FPGA-Configuration/How-to-store-the-bitstreams-into-the-DDR/td-p/810218
+#/
 main size: 256000
 main read latency: 8
 main search latency: 32

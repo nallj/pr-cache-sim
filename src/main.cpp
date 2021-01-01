@@ -11,7 +11,7 @@
 #include "wallet.hpp"
 
 #include "storage/reconfigurableRegions.hpp"
-#include "storage/module.hpp"
+#include "storage/rrModule.hpp"
 
 bool fileExists(const std::string& file) {
   return access(file.c_str(), F_OK) != -1;
@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
               if (argc == 5) {
                 sim_device.simulateApplication();
               } else {
-                auto max_cc_count = atoi(argv[5]);
+                const auto max_cc_count = atoi(argv[5]);
                 sim_device.simulateApplication(max_cc_count);
               }
 

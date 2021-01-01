@@ -82,7 +82,7 @@ void prrLevelController::step() {
       icap_ack_ = false;
     }
 
-    module* prr_content = prr_->getModuleFromRegion(prr_id_);
+    rrModule* prr_content = prr_->getModuleFromRegion(prr_id_);
 
     std::ostringstream prr_status;
     prr_status << "\tPRR[" << prr_content->getRegionId() << "]: ";
@@ -229,8 +229,8 @@ void prrLevelController::step() {
           //if (prr_->isRegionPopulated(region_id)) {
             //std::cout << "yes it is. ";
 
-            //module* region_module_content = prr_->getModuleFromRegion(region_id);
-            module* region_contents = prr_->getModuleFromRegion(region_id);
+            //rrModule* region_module_content = prr_->getModuleFromRegion(region_id);
+            rrModule* region_contents = prr_->getModuleFromRegion(region_id);
 
             if (region_contents->getModuleId() == module_id) {
               std::cout << "\tThe module in target region PRR[" << prr_id_

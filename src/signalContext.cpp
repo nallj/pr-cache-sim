@@ -1,7 +1,5 @@
 #include "signalContext.hpp"
 
-/* PUBLIC */
-
 signalContext::signalContext(
   std::vector<prrLevelController*>* prr_ctrls,
   std::shared_ptr<prc> prc,
@@ -51,6 +49,36 @@ signalContext::signalContext(
   icap_transfer_ = icap->accessSignal(ICAP_TRANSFER_PRR);
 };
 
+/* Helper Functions */
+
+std::string produceSpaces(
+  unsigned count,
+  unsigned var_len_num_count,
+  unsigned variable_length_num
+) {
+  std::ostringstream spaces;
+
+  if (var_len_num_count != 0) {
+    if (variable_length_num < 10)
+      count += var_len_num_count;
+    else if (variable_length_num < 100)
+      count += var_len_num_count * 2;
+    else if (variable_length_num < 1000)
+      count += var_len_num_count * 3;
+    else if (variable_length_num < 10000)
+      count += var_len_num_count * 4;
+    else
+      count += var_len_num_count * 5;
+  }
+
+  for (unsigned i = 0; i < count; i++) {
+    spaces << " ";
+  }
+
+  return spaces.str();
+}
+
+/* Methods */
 
 void signalContext::refreshContext(bool printRefreshProgress, bool beVeryDetailed) {
 
@@ -486,31 +514,3 @@ traceToken** signalContext::accessContextCurrentTrace(bool fromPrcElseIcap) {
   return fromPrcElseIcap ? prc_current_trace_ : icap_current_trace_;
 }
 
-/* PRIVATE */
-
-std::string signalContext::produceSpaces(
-  unsigned count,
-  unsigned var_len_num_count,
-  unsigned variable_length_num
-) {
-  std::ostringstream spaces;
-
-  if (var_len_num_count != 0) {
-    if (variable_length_num < 10)
-      count += var_len_num_count;
-    else if (variable_length_num < 100)
-      count += var_len_num_count * 2;
-    else if (variable_length_num < 1000)
-      count += var_len_num_count * 3;
-    else if (variable_length_num < 10000)
-      count += var_len_num_count * 4;
-    else
-      count += var_len_num_count * 5;
-  }
-
-  for (unsigned i = 0; i < count; i++) {
-    spaces << " ";
-  }
-
-  return spaces.str();
-}

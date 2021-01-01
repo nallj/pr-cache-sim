@@ -9,16 +9,20 @@
 #include <unordered_map> // unordered_map
 
 #include "../globals.hpp"
+#include "../signalContext.hpp"
 #include "../traceToken.hpp"
 #include "../storage/memoryLevel.hpp"
 #include "../storage/reconfigurableRegions.hpp"
+#include "../types.hpp"
+
+class signalContext;
 
 enum icapState { ICAP_INIT, ICAP_IDLE, ICAP_WAIT, ICAP_LOCK_PRR, ICAP_TRANSFER };
 
 class icap {
   double icap_speed_;
   unsigned icap_bus_width_;
-  std::unordered_map<unsigned, unsigned> region_width_;
+  bitstreamSizeMap_t region_width_;
   double sim_speed_;
 
   // priority queue for active programming requests
@@ -54,17 +58,13 @@ public:
   icap(double speed, unsigned bus_width);
   ~icap();
 
-  void setRegionWidths(std::unordered_map<unsigned, unsigned> region_width);
+  void setRegionWidths(bitstreamSizeMap_t region_width);
   void setSimulationSpeed(double sim_speed);
 
   void connect(
     std::vector<storageUnit*>* memory_hierarchy,
     reconfigurableRegions* prrs,
-    std::deque<bool>* prr_executing,
-    traceToken** current_trace_ptr,
-    unsigned* prc_mc,
-    bool* prc_req,
-    bool* prr_ctrl_ack
+    signalContext& signals
   );
 
   void step();

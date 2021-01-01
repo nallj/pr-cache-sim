@@ -1,19 +1,20 @@
-#include "fcfsAlg.hpp"
+#include "fcfsScheduler.hpp"
 
-fcfsAlg::fcfsAlg(std::shared_ptr<nallj::graph> task_graph) :
-  schedulingAlg("First Come, First Serve (FCFS)", task_graph) {
+fcfsScheduler::fcfsScheduler(std::shared_ptr<nallj::graph> task_graph) :
+  taskScheduler("First Come, First Serve (FCFS)", task_graph) {
     initialize();
   }
 
-graphNode& fcfsAlg::peekCurrentTask() {
+graphNode& fcfsScheduler::peekCurrentTask() {
   return task_queue_.front().second;
 }
 
-std::string fcfsAlg::peekCurrentTaskId() {
+std::string fcfsScheduler::peekCurrentTaskId() {
   return task_queue_.front().first;
 }
 
-void fcfsAlg::blockCurrentTask() {
+// TODO: Who is the audience for this task?
+void fcfsScheduler::blockCurrentTask() {
   // Get current task to the blocked task list.
   const auto task_pair = task_queue_.front();
 
@@ -28,11 +29,25 @@ void fcfsAlg::blockCurrentTask() {
   blocked_tasks_map_.emplace(key, task_ptr);
 
   // Remove task from queue.
-  task_queue_.pop_back();
+  removeCurrentTask();
+}
+
+/**
+ * Put all the start nodes of the task graph into the task queue.
+ */
+void fcfsScheduler::initialize() {
+  const auto start_node_map = task_graph_->getStartNodeMap();
+  for (const auto entry : start_node_map) {
+    // Add start node to the queue.
+    task_queue_.push_back(entry);
+
+    // Record node key for quick lookup for if node has been in the queue.
+    task_queue_lookup_.emplace(entry.first, nullptr);
+  }
 }
 
 // TODO: Consider name change (e.g. markCurrentTaskDone).
-void fcfsAlg::prepareNextTask() {
+void fcfsScheduler::prepareNextTask() {
   // Get current task.
   const auto& current_task = peekCurrentTask();
 
@@ -49,19 +64,9 @@ void fcfsAlg::prepareNextTask() {
   }
 
   // Remove task from queue.
-  task_queue_.pop_back();
+  removeCurrentTask();
 }
 
-/**
- * Put all the start nodes of the task graph into the task queue.
- */
-void fcfsAlg::initialize() {
-  const auto start_node_map = task_graph_->getStartNodeMap();
-  for (const auto entry : start_node_map) {
-    // Add start node to the queue.
-    task_queue_.push_back(entry);
-
-    // Record node key for quick lookup for if node has been in the queue.
-    task_queue_lookup_.emplace(entry.first, nullptr);
-  }
+void fcfsScheduler::removeCurrentTask() {
+  task_queue_.pop_front();
 }

@@ -12,19 +12,22 @@ static const unsigned prcStateStalls[] = {
 };
 
 
-prc::prc(double prc_speed, schedulingAlgType scheduling_alg_type, rrSelectionPolicyType prr_sel_policy_type) :
+prc::prc(
+  double prc_speed,
+  taskSchedulingType scheduling_alg_type,
+  rrSelectionType bs_sel_policy_type
+) :
   prc_speed_(prc_speed),
   next_state_(PRC_INIT),
   prc_counter_(0),
   memory_counter_(0),
   trace_counter_(0),
   stall_count_(0),
-  scheduling_alg_(),
   scheduling_alg_type_(scheduling_alg_type),
   prr_ctrl_execute_(false),
-  prr_sel_policy_type_(prr_sel_policy_type),
+  bs_sel_policy_type_(bs_sel_policy_type),
   memory_ack_(false),
-  icap_req_(false) {}
+  icap_req_(false) { }
 
 prc::~prc() {
   delete mem_search_done_;
@@ -36,39 +39,43 @@ void prc::connect(
   std::vector<storageUnit*>* memory_hierarchy,
   reconfigurableRegions* memory_hierarchy_top,
   std::shared_ptr<nallj::graph> task_graph,
-  std::deque<bool>* prr_executing,
-  bool* prr_ack,
-  bool* icap_ack,
-  bool* icap_trans
+  const taskRrLookupMap_t& bs_capabilites,
+  signalContext& signals
 ) {
   // IN signals
   memory_hierarchy_ = memory_hierarchy;
   memory_hierarchy_top_ = memory_hierarchy_top;
 
-  prr_executing_ = prr_executing;
-  prr_ack_ = prr_ack;
+  prr_executing_ = signals.accessContextSignalBus(PRR_EXE);
+  prr_ack_ = signals.accessContextSignal(PRR_PRC_ACK);
 
-  for (unsigned i = 0; i < prr_executing->size(); i++) {
+  for (unsigned i = 0; i < prr_executing_->size(); i++) {
     prr_enqueue_.push_back(false);
     prr_start_.push_back(false);
   }
 
   // OUT signals
-  icap_ack_ = icap_ack;
-  icap_trans_ = icap_trans;
+  icap_ack_ = signals.accessContextSignal(ICAP_PRC_ACK);
+  icap_trans_ = signals.accessContextSignal(ICAP_TRANSFER_PRR);
 
   // Wire up the scheduler.
   switch (scheduling_alg_type_) { 
     case FCFS:
-      scheduling_alg_ = std::make_unique<fcfsAlg>(task_graph);
+      scheduling_alg_ = std::make_unique<fcfsScheduler>(task_graph);
       break;
     default:
-      throw std::invalid_argument("Unknown scheduling algorithm.");
+      throw std::invalid_argument("Unknown task scheduling algorithm.");
+  }
+  switch (bs_sel_policy_type_) {
+    case LFT_FE:
+      bs_sel_policy_ = std::make_unique<lftFeSelector>(bs_capabilites, signals);
+      break;
+    default:
+      throw std::invalid_argument("Unknown RR selection policy.");
   }
 }
 
 void prc::step() {
-
   std::cout << "PRC[cc" << prc_counter_ << "]: ";
 
   // stalling helps the simulator more closely behave as hardware would.
@@ -89,10 +96,48 @@ void prc::step() {
         //mc_ = &memory_counter_;
         //tc_ = &trace_counter_;
 
-        next_state_ = PRC_SCHEDULE;
+        next_state_ = PRC_TASK_SCHEDULE;
         break;
 
-      case PRC_SCHEDULE:
+  // rrSelectionType bs_sel_policy_type_;
+  // std::unique_ptr<bitstreamSelector> bs_sel_policy_;
+  // taskSchedulingType scheduling_alg_type_;
+  // std::unique_ptr<taskScheduler> scheduling_alg_;
+
+      case PRC_TASK_SCHEDULE: {
+        // graphNode& 
+        const auto task_choice = scheduling_alg_->peekCurrentTask();
+        scheduling_alg_->prepareNextTask();
+
+
+        // TODO: Make 'get task type' function.
+        const auto task_type_id = task_choice.getMetadata()["type"];
+        break;
+      }
+      case PRC_RR_SCHEDULE: {
+        // ???
+        // const auto rr_choice = bs_sel_policy_->getBitstreamForTask(task_choice?);
+        // go to PRC_REQ_ICAP
+        // or ...
+
+        // if (icap cant accept || rr cant accept) {
+        //   // do nothing, stay in same state (reevaluate on next cycle)
+
+        //   // maybe send back to PRC_TASK_SCHEDULE if too much time passes
+
+        // } else {
+        //   // go to PRC_REQ_ICAP
+        // }
+        break;
+      }
+      case PRC_REQ_ICAP:
+        // if too much time passes, go back PRC_TASK_SCHEDULE ?
+
+        // if (icap_ack) {
+        //   // deassert icap_req
+        //   // go to PRC_ICAP_TRANSFER
+        //   // NO, goto 
+        // }
         break;
 
       /*

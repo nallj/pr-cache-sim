@@ -13,7 +13,7 @@ signalContext::signalContext(
   stored_prc_icap_req_(false),
   stored_icap_prc_ack_(false),
   stored_icap_transfer_(false),
-  icap_current_trace_(nullptr) {
+  prc_current_task_(nullptr) {
 
   // all stored variables are initialized to false (logical zero). individual stored variables
   // are declared in the class initialization list whilst the stored bus signal are declared below.
@@ -22,6 +22,7 @@ signalContext::signalContext(
     stored_prc_enqueue_prr_.push_back(false);
     stored_prc_start_prr_.push_back(false);
     stored_icap_prr_ctrl_req_.push_back(false);
+    stored_rrc_bitstream_.push_back(-1);
   }
 
 
@@ -32,20 +33,25 @@ signalContext::signalContext(
     prr_executing_.push_back(prr_ctrls->at(i)->accessSignal(PRR_EXE));
     prr_prc_ack_.push_back(prr_ctrls->at(i)->accessSignal(PRR_PRC_ACK));
     prr_icap_ack_.push_back(prr_ctrls->at(i)->accessSignal(PRR_ICAP_ACK));
+    rrc_bitstream_.push_back(prr_ctrls->at(i)->accessNumberSignal(RRC_BITSTREAM));
   }
 
   // PRC output pointers
-  prc_current_trace_ = prc->accessTrace();
+  // prc_current_trace_ = prc->accessTrace();
+  prc_scheduled_bs_ = prc->accessScheduledBitstream();
+  prc_current_task_ = prc->accessScheduledTask();
   prc_mc_ = prc->accessCounterSignal(PRC_MC);
   prc_start_prr_ = prc->accessSignalBus(PRC_START_PRR);
   prc_enqueue_prr_ = prc->accessSignalBus(PRC_ENQUEUE_PRR);
   prc_icap_req_ = prc->accessSignal(PRC_ICAP_REQ);
 
   // ICAP output pointers
-  icap_current_trace_ = icap->accessTrace();
-  icap_mc_ = icap->accessCounterSignal(ICAP_MC);
+  // icap_current_trace_ = icap->accessTrace();
+  icap_transfer_bs_ = icap->accessTransferBitstream();
+  icap_mc_ = icap->accessNumberSignal(ICAP_MC);
   icap_prc_ack_ = icap->accessSignal(ICAP_PRC_ACK);
   icap_prr_ctrl_req_ = icap->accessSignalBus(ICAP_PRR_REQ);
+  icap_target_rr_ = icap->accessNumberSignal(ICAP_TARGET_RR);
   icap_transfer_ = icap->accessSignal(ICAP_TRANSFER_PRR);
 };
 
@@ -91,12 +97,12 @@ void signalContext::refreshContext(bool printRefreshProgress, bool beVeryDetaile
   /*** PRC signal statuses ****************************************************/
 
   // PRC_CURR_TRACE ///////////////////
-  if (*prc_current_trace_) {
-    if (printRefreshProgress)
-      std::cout << "\tPRC_LATCHED_TRACE = <" << *prc_current_trace_ << ">\n";
+  // if (*prc_current_trace_) {
+  //   if (printRefreshProgress)
+  //     std::cout << "\tPRC_LATCHED_TRACE = <" << *prc_current_trace_ << ">\n";
 
-    stored_prc_current_trace_ = **prc_current_trace_;
-  }
+  //   stored_prc_current_trace_ = **prc_current_trace_;
+  // }
   /////////////////////////////////////
 
 
@@ -199,16 +205,16 @@ void signalContext::refreshContext(bool printRefreshProgress, bool beVeryDetaile
   /*** ICAP signal statuses ***************************************************/
 
   // ICAP_CURR_TRACE //////////////////
-  if (*icap_current_trace_ != nullptr && *icap_current_trace_) {
-    if (printRefreshProgress)
-      std::cout << "\tICAP_LATCHED_TRACE = <" << *icap_current_trace_ << ">\n";
+  // if (*icap_current_trace_ != nullptr && *icap_current_trace_) {
+  //   if (printRefreshProgress)
+  //     std::cout << "\tICAP_LATCHED_TRACE = <" << *icap_current_trace_ << ">\n";
 
-    stored_icap_current_trace_ = **icap_current_trace_;
-  }
+  //   stored_icap_current_trace_ = **icap_current_trace_;
+  // }
   /////////////////////////////////////
 
 
-  // PRC_MC ///////////////////
+  // ICAP_MC ///////////////////
   stored_icap_mc_ = *icap_mc_;
 
 
@@ -278,6 +284,9 @@ void signalContext::refreshContext(bool printRefreshProgress, bool beVeryDetaile
   status_out.str("");
   status_sub.str("");
   //////////////////////////////
+
+  // ICAP_TARGET_RR ////////////
+  stored_icap_target_rr_ = *icap_target_rr_;
 
   /*** end ICAP signal statuses ***********************************************/
 
@@ -389,6 +398,7 @@ void signalContext::refreshContext(bool printRefreshProgress, bool beVeryDetaile
             << (stored_prr_executing_[i] ? "true" : "false");
 
     stored_prr_executing_[i] = prr_exe;
+    stored_rrc_bitstream_[i] = *(rrc_bitstream_[i]);
 
     status_out << stored_prr_executing_[i] << " ";
     status_sub << ((value_before_change != stored_prr_executing_[i])
@@ -436,6 +446,17 @@ std::deque<bool>* signalContext::accessContextSignalBus(prrCtrlSignal signal) {
   }
 }
 
+// RRC_BITSTREAM
+std::deque<unsigned>* signalContext::accessContextNumberSignal(prrCtrlSignal signal) {
+  switch (signal) {
+    case RRC_BITSTREAM:
+      return &stored_rrc_bitstream_;
+
+    default:
+      return nullptr;
+  }
+}
+
 // PRC_MC
 unsigned* signalContext::accessContextCounterSignal(prcSignal signal) {
   switch (signal) {
@@ -474,10 +495,13 @@ bool* signalContext::accessContextSignal(prcSignal signal, unsigned bus_bit) {
 
 
 // ICAP_MC
-unsigned* signalContext::accessContextCounterSignal(icapSignal signal) {
+unsigned* signalContext::accessContextNumberSignal(icapSignal signal) {
   switch (signal) {
     case ICAP_MC:
       return &stored_icap_mc_;
+
+    case ICAP_TARGET_RR:
+      return &stored_icap_target_rr_;
 
     default:
       return nullptr;
@@ -510,7 +534,18 @@ bool* signalContext::accessContextSignal(icapSignal signal, unsigned bus_bit) {
 }
 
 // TODO: Get rid of this. Traces are superseded by task graphs.
-traceToken** signalContext::accessContextCurrentTrace(bool fromPrcElseIcap) {
-  return fromPrcElseIcap ? prc_current_trace_ : icap_current_trace_;
+// traceToken** signalContext::accessContextCurrentTrace(bool fromPrcElseIcap) {
+//   return fromPrcElseIcap ? prc_current_trace_ : icap_current_trace_;
+// }
+
+std::shared_ptr<moduleSpec> signalContext::accessContextIcapTransferBitstream() const {
+  return icap_transfer_bs_;
 }
 
+std::shared_ptr<moduleSpec> signalContext::accessContextPrcScheduledBitstream() const {
+  return prc_scheduled_bs_;
+}
+
+nallj::nodePtr signalContext::accessContextCurrentTask() const {
+  return prc_current_task_;
+}

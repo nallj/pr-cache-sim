@@ -15,7 +15,8 @@ static const unsigned prcStateStalls[] = {
 prc::prc(
   double prc_speed,
   taskSchedulingType scheduling_alg_type,
-  rrSelectionType bs_sel_policy_type
+  rrSelectionType bs_sel_policy_type,
+  rrSpecMap_t rr_spec_map
 ) :
   prc_speed_(prc_speed),
   next_state_(PRC_INIT),
@@ -27,7 +28,9 @@ prc::prc(
   prr_ctrl_execute_(false),
   bs_sel_policy_type_(bs_sel_policy_type),
   memory_ack_(false),
-  icap_req_(false) { }
+  icap_req_(false),
+  rr_spec_map_(rr_spec_map),
+  scheduled_task_valid_(false) { }
 
 prc::~prc() {
   delete mem_search_done_;
@@ -45,17 +48,18 @@ void prc::connect(
   // IN signals
   memory_hierarchy_ = memory_hierarchy;
   memory_hierarchy_top_ = memory_hierarchy_top;
-
+  
   prr_executing_ = signals.accessContextSignalBus(PRR_EXE);
   prr_ack_ = signals.accessContextSignal(PRR_PRC_ACK);
+  rr_bitstream_id_ = signals.accessContextNumberSignal(RRC_BITSTREAM);
 
   for (unsigned i = 0; i < prr_executing_->size(); i++) {
     prr_enqueue_.push_back(false);
     prr_start_.push_back(false);
   }
 
-  // OUT signals
   icap_ack_ = signals.accessContextSignal(ICAP_PRC_ACK);
+  icap_target_rr_ = signals.accessContextSignal(ICAP_TARGET_RR);
   icap_trans_ = signals.accessContextSignal(ICAP_TRANSFER_PRR);
 
   // Wire up the scheduler.
@@ -68,7 +72,7 @@ void prc::connect(
   }
   switch (bs_sel_policy_type_) {
     case LFT_FE:
-      bs_sel_policy_ = std::make_unique<lftFeSelector>(bs_capabilites, signals);
+      bs_sel_policy_ = std::make_unique<lftFeSelector>(bs_capabilites, rr_spec_map_, signals);
       break;
     default:
       throw std::invalid_argument("Unknown RR selection policy.");
@@ -78,7 +82,7 @@ void prc::connect(
 void prc::step() {
   std::cout << "PRC[cc" << prc_counter_ << "]: ";
 
-  // stalling helps the simulator more closely behave as hardware would.
+  // Simulate stalls if you want states to take more than a single PRC cycle.
   if (stall_count_ != 0) {
     stall_count_--;
     std::cout << "stalling (" << stall_count_ << " left)...\n";
@@ -104,40 +108,52 @@ void prc::step() {
   // taskSchedulingType scheduling_alg_type_;
   // std::unique_ptr<taskScheduler> scheduling_alg_;
 
-      case PRC_TASK_SCHEDULE: {
-        // graphNode& 
-        const auto task_choice = scheduling_alg_->peekCurrentTask();
+      case PRC_TASK_SCHEDULE:
+        scheduled_task_ = std::make_shared<nallj::graphNode>(scheduling_alg_->getCurrentTask());
+        scheduled_task_valid_ = true;
+
         scheduling_alg_->prepareNextTask();
 
-
-        // TODO: Make 'get task type' function.
-        const auto task_type_id = task_choice.getMetadata()["type"];
+        next_state_ = PRC_RR_SCHEDULE;
         break;
-      }
+
       case PRC_RR_SCHEDULE: {
-        // ???
-        // const auto rr_choice = bs_sel_policy_->getBitstreamForTask(task_choice?);
-        // go to PRC_REQ_ICAP
-        // or ...
+        const auto target_bs = bs_sel_policy_->getBitstreamForTask(*scheduled_task_.get());
 
-        // if (icap cant accept || rr cant accept) {
-        //   // do nothing, stay in same state (reevaluate on next cycle)
+        const auto bs_not_found = !target_bs.first;
+        scheduled_bs_ = std::make_shared<moduleSpec>(target_bs.second);
 
-        //   // maybe send back to PRC_TASK_SCHEDULE if too much time passes
+        const auto rr_id = scheduled_bs_->region_id;
+        const auto bs_id = scheduled_bs_->id;
 
-        // } else {
-        //   // go to PRC_REQ_ICAP
-        // }
+        // Either the bitstream is already installed or the ICAP is installing this bitstream now.
+        const auto target_bs_available = rr_bitstream_id_->at(rr_id) == bs_id;
+        // const auto icap_transferring_to_rr = *icap_trans_ && *icap_target_rr_ == rr_id;
+        const auto icap_transferring_to_rr = *icap_trans_ && *icap_target_rr_ == rr_id;
+        const auto bs_not_immediately_available = icap_transferring_to_rr && !target_bs_available;
+
+        // The task scheduler chose a task that can't be immediately scheduled. This may not be
+        // desired; just in case, ask the scheduler to choose a task again.
+        if (bs_not_found || bs_not_immediately_available) {
+          next_state_ = PRC_TASK_SCHEDULE;
+          break;
+        }
+
+        // If the desired bitstream is already installed in the RR then enqueue the task in the RR
+        // controller. Otherwise, request that the ICAP fetch the bitstream.
+        if (target_bs_available) {
+          next_state_ = PRC_RR_ENQUEUE;
+        } else {
+          next_state_ = PRC_REQ_ICAP;
+          icap_req_ = true;
+        }
         break;
       }
       case PRC_REQ_ICAP:
-        // if too much time passes, go back PRC_TASK_SCHEDULE ?
-
-        // if (icap_ack) {
-        //   // deassert icap_req
-        //   // go to PRC_ICAP_TRANSFER
-        //   // NO, goto 
-        // }
+        if (*icap_ack_) { // || *icap_deny_
+          icap_req_ = false;
+          next_state_ = PRC_TASK_SCHEDULE;
+        }
         break;
 
       /*
@@ -329,13 +345,21 @@ void prc::step() {
 // OUT signals
 
 // dont change this - this is good
-traceToken** prc::accessTrace() {
-  //return &current_trace_;
+// traceToken** prc::accessTrace() {
+//   //return &current_trace_;
 
-  auto lol = new traceToken();
-  traceToken** rofl;
-  rofl = &lol;
-  return rofl;
+//   auto lol = new traceToken();
+//   traceToken** rofl;
+//   rofl = &lol;
+//   return rofl;
+// }
+
+std::shared_ptr<moduleSpec> prc::accessScheduledBitstream() const {
+  return scheduled_bs_;
+}
+
+nallj::nodePtr prc::accessScheduledTask() const {
+  return scheduled_task_;
 }
 
 // PRC_MC

@@ -57,20 +57,28 @@ name: Realistic Memory Configuration
       (if not directly mapped) denoted by the level's search latency"
 #/
 
-main name: DDR RAM
+main name: QSPI Serial NOR Flash Memory (Spansion S25FL256S)
 /#
-  actually, SPI/BPI Flash memory
+  actually, SPI/BPI (Byte Peripheral Interface) Flash memory
   see UG909, p.116
   "SPI and BPI flash can be used to store partial bitstreams, ..."
 
   how to store in DRR? https://forums.xilinx.com/t5/FPGA-Configuration/How-to-store-the-bitstreams-into-the-DDR/td-p/810218
+
+  e.g. Spansion S25FL256S for the ZedBoard
 #/
 main size: 256000
+
+# TODO: Get rid of these.
 main read latency: 8
 main search latency: 32
 
+# TODO: Switch to this:
+# main read speed: 104.00
+
 l1 name: BlockRAM
 l1 size: 128000
-l1 read latency: 2
-l1 search latency: 4
+# l1 read latency: 2
+# l1 search latency: 4
 l1 has LUT
+#l1 read speed: 

@@ -6,7 +6,7 @@
 // #include <cppJsonGraph/graph.hpp>
 #include <cppJsonGraph/graphNode.hpp>
 
-#include "../../specs/bitstream.hpp"
+#include "../../types.hpp"
 
 // I need to know tha current status of the PRR controllers, and the relationship between tasks and bitstreams; the latter
 // of which is not yet expressed in the .app file. However, it can be done by having "rrX module Y tasks: task_t0, ..."
@@ -22,7 +22,7 @@ public:
   virtual ~bitstreamSelector();
 
   // virtual nallj::graphNode& giveMeTheNextTask() = 0;
-  virtual bitstream getBitstreamForTask(const nallj::graphNode& task) const = 0;
+  virtual targetBs_t getBitstreamForTask(const nallj::graphNode& task) const = 0;
 };
 
 #endif

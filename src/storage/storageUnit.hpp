@@ -8,6 +8,7 @@
 
 class memoryLevel;
 
+// Consider name change to "storageTier".
 class storageUnit {
 protected:
   // Operational Methods //

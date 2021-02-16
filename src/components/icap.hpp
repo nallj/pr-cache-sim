@@ -1,12 +1,14 @@
 #ifndef NALLJ_DRACHMA_ICAP
 #define NALLJ_DRACHMA_ICAP
 
-#include <iostream>
-#include <queue>
-#include <vector>
-#include <functional>
 #include <deque>
+#include <functional>
+#include <iostream>
+#include <memory> // make_shared, shared_ptr
+#include <queue>
+#include <stdexcept> // runtime_error
 #include <unordered_map> // unordered_map
+#include <vector>
 
 #include "../globals.hpp"
 #include "../signalContext.hpp"
@@ -17,7 +19,14 @@
 
 class signalContext;
 
-enum icapState { ICAP_INIT, ICAP_IDLE, ICAP_WAIT, ICAP_LOCK_PRR, ICAP_TRANSFER };
+enum icapState {
+  ICAP_INIT,
+  ICAP_IDLE,
+  ICAP_ACK, // need to rename
+  ICAP_WAIT,
+  // ICAP_LOCK_PRR,
+  ICAP_TRANSFER
+};
 
 class icap {
   double icap_speed_;
@@ -30,8 +39,9 @@ class icap {
 
   unsigned* prc_mc_;
   unsigned memory_counter_;
+  unsigned target_rr_;
 
-  bool transferring_;
+  bool transferring_; // When deasserted, target_rr_ is not valid.
   unsigned long transfer_latency_;
   unsigned long internal_timestep_;
 
@@ -48,9 +58,15 @@ class icap {
   bool* prr_ctrl_ack_;
 
   bool prc_ack_;
-  bool *prc_req_;
-  traceToken** current_trace_ptr_;
-  traceToken* current_trace_;
+  bool* prc_req_;
+  // traceToken** current_trace_ptr_;
+  // traceToken* current_trace_;
+
+  std::shared_ptr<moduleSpec> prc_scheduled_bs_;
+
+  //nallj::graphNode* current_task_;
+  std::shared_ptr<moduleSpec> transfer_bs_;
+  bool transfer_bs_valid_;
 
   unsigned calculateTransferLatency(unsigned region_id);
 
@@ -74,7 +90,7 @@ public:
 
   // ICAP_MC
   // getter function used by the signal context to retrieve signals
-  unsigned* accessCounterSignal(icapSignal signal);
+  unsigned* accessNumberSignal(icapSignal signal);
 
   // ICAP_PRC_ACK, ICAP_TRANSFER
   // getter function used by the signal context to retrieve signals
@@ -84,7 +100,8 @@ public:
   // getter function used by the signal context to retrieve signal buses
   std::deque<bool>* accessSignalBus(icapSignal signal);
 
-  traceToken** accessTrace();
+  // traceToken** accessTrace();
+  std::shared_ptr<moduleSpec> accessTransferBitstream() const;
 };
 
 #endif

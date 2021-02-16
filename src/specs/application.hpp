@@ -11,18 +11,6 @@
 #include "../types.hpp"
 #include "moduleSpec.hpp"
 
-// using idList_t = std::vector<unsigned>;
-// template<class T>
-// using idLookupMap_t = std::unordered_map<unsigned, T>;
-template<class T>
-using rrModuleLookupMap_t = idLookupMap_t<idLookupMap_t<T>>;
-// template<class T>
-// using taskLookupMap_t = std::unordered_map<std::string, T>;
-
-// using bitstreamSizeMap_t = idLookupMap_t<unsigned>;
-// using taskRrLookupMap_t = idLookupMap_t<taskLookupMap_t<idList_t>>;
-using rrSpecMap_t = rrModuleLookupMap_t<moduleSpec>;
-
 // using srMap_t = std::multimap<unsigned, unsigned>;
 using srMap_t = idLookupMap_t<unsigned>;
 // Why the heck did I make this a multimap?
@@ -53,7 +41,7 @@ struct application {
     const rrSpecMap_t& rr_spec_map,
     const double fastest_module_speed
   );
-  
+
   bitstreamSizeMap_t getRrBitstreamSizes();
   taskRrLookupMap_t getRrTaskCapabilites();
   void printDetails(unsigned indents);

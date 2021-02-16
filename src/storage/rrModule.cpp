@@ -1,5 +1,15 @@
 #include "rrModule.hpp"
 
+std::vector<std::string> getTaskTypeIds(std::vector<taskSpec> tasks) {
+  std::vector<std::string> task_type_ids;
+
+  for (const auto& task : tasks) {
+    const auto task_type_id = task.type_id;
+    task_type_ids.push_back(task_type_id);
+  }
+  return task_type_ids;
+}
+
 rrModule::rrModule() :
   region_id_(-1), module_id_(-1), bitstream_width_(0), operating_speed_(0) { }
 
@@ -20,15 +30,17 @@ rrModule::rrModule(
   unsigned region_id,
   unsigned module_id,
   unsigned bitstream_width,
-  double speed,
-  std::string task_type
+  std::vector<taskSpec> tasks
+  // double speed,
+  // std::string task_type
 ) :
   current_state_(VACANT),
   region_id_(region_id),
   module_id_(module_id),
   bitstream_width_(bitstream_width),
-  operating_speed_(speed),
-  task_type_(task_type),
+  // TODO: Set this when this module is being executed for an intended task type.
+  // operating_speed_(speed),
+  task_type_ids_(getTaskTypeIds(tasks)),
   internal_timestep_(0),
   executing_(false),
   in_simulation_(false) { }

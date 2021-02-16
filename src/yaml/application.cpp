@@ -8,7 +8,7 @@ taskSchedulingType getTasktaskSchedulingType(const std::string& str) {
 }
 
 rrSelectionType getrrSelectionAlgPolicyType(const std::string& str) {
-  if (str == "lf") {
+  if (str == "lft") {
     return LFT_FE;
   }
   throw userError("Invalid PRR scheduling algorithm specified.");
@@ -62,25 +62,37 @@ namespace YAML {
       const auto bitstream_size = rr_node["bitstream size"].as<unsigned>();
 
       for (const auto& module_node : rr_node["modules"]) {
-        moduleSpec spec;
+        moduleSpec module_spec;
 
         // Collect spec fields.
         const auto module_id = module_node["id"].as<unsigned>();
-        const auto speed = module_node["speed"].as<double>();
 
-        spec.region_id = rr_id;
-        spec.bitstream_width = bitstream_size;
-        spec.id = module_id;
-        spec.speed = speed;
-        spec.task_type_ids = module_node["task types"].as<std::vector<std::string>>();
+        module_spec.region_id = rr_id;
+        module_spec.bitstream_width = bitstream_size;
+        module_spec.id = module_id;
 
-        // Save the spec to the RR map.
-        rr_map[rr_id][module_id] = spec;
+        // std::vector<taskSpec> tasks
+        for (const auto& task : module_node["tasks"]) {
+          const auto speed = task["speed"].as<double>();
 
-        // Keep track of fasted module.
-        if (speed > fastest_module_speed) {
-          fastest_module_speed = speed;
+          // Keep track of fastest task.
+          if (speed > fastest_module_speed) {
+            fastest_module_speed = speed;
+          }
+
+          taskSpec task_spec;
+          task_spec.region_id = rr_id;
+          task_spec.module_id = module_id;
+          task_spec.type_id = task["type"].as<std::string>();
+          task_spec.speed = speed;
+          task_spec.cycles = task["cycles"].as<unsigned>();
+
+          // Save the task spec to this module spec.
+          module_spec.tasks.push_back(task_spec);
         }
+
+        // Save the module specification to the RR map.
+        rr_map[rr_id][module_id] = module_spec;
       }
     }
     rhs.rr_spec_map = rr_map;

@@ -68,14 +68,15 @@ taskRrLookupMap_t application::getRrTaskCapabilites() {
 
     for (const auto rr_module : module_map) {
       const auto module_id = rr_module.first;
-      const auto& task_types = rr_module.second.task_type_ids;
+      const auto& tasks = rr_module.second.tasks;
 
       // Assert that the current module supports at least one task.
-      if (task_types.size() == 0) {
+      if (tasks.size() == 0) {
         throw std::runtime_error("Target module doesn't support any tasks.");
       }
 
-      for (const auto type_id : task_types) {
+      for (const auto task : tasks) {
+        const auto type_id = task.type_id;
         bs_capabilities[type_id][rr_id].push_back(module_id);
       }
     }
@@ -121,7 +122,9 @@ void application::printDetails(unsigned indents) {
     std::cout << "RR" << rr_entry.first << "(f) = { ";
     const auto module_map = rr_entry.second;
     for (auto it = module_map.begin(); it != module_map.end();) {
-      std::cout << it->second.speed << " MHz";
+
+      // TODO: Fix representation.
+      // std::cout << it->second.speed << " MHz";
 
       // Add a comma at the end of the line if not the last element.
       if (++it != module_map.end()) {

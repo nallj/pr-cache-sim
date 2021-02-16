@@ -12,13 +12,15 @@ protected:
 
   taskScheduler(const char* name, std::shared_ptr<nallj::graph> task_graph);
 
+  virtual std::string peekCurrentTaskId() = 0;
+  virtual nallj::graphNode& peekCurrentTask() = 0;
+
 public:
   const char* name_;
 
   virtual ~taskScheduler();
 
-  virtual std::string peekCurrentTaskId() = 0;
-  virtual nallj::graphNode& peekCurrentTask() = 0;
+  virtual nallj::graphNode getCurrentTask() = 0;
   virtual void blockCurrentTask() = 0;
   virtual void prepareNextTask() = 0;
 };

@@ -7,6 +7,17 @@ static const unsigned prrStateStalls[] = {
   0  // PRR_TRANSFER
 };
 
+/* HELPERS */
+
+taskSpec getSpecForTaskFromBs(moduleSpec bitstream, std::string task_id) {
+  for (const auto& task : bitstream.tasks) {
+    if (task.type_id == task_id) {
+      return task;
+    }
+  }
+  throw std::runtime_error("Expected task spec was not present in module spec.");
+}
+
 /* PUBLIC */
 
 prrLevelController::prrLevelController(
@@ -33,16 +44,20 @@ void prrLevelController::connect(
   unsigned *icap_mc,
   bool *icap_req,
   bool *icap_trans,
-  traceToken** prc_current_trace_ptr,
-  traceToken** icap_current_trace_ptr
+  // traceToken** prc_current_trace_ptr,
+  // traceToken** icap_current_trace_ptr
+  nallj::nodePtr prc_current_task,
+  std::shared_ptr<moduleSpec> prc_scheduled_bs,
+  std::shared_ptr<moduleSpec> icap_transfer_bs
 ) {
-
-  prc_current_trace_ptr_ = prc_current_trace_ptr;
+  prc_scheduled_bs_ptr_ = prc_scheduled_bs;
+  // prc_current_trace_ptr_ = prc_current_trace_ptr;
   prc_start_ = prc_start;
   prc_enqueue_ = prc_enqueue;
 
   icap_mc_ = icap_mc;
-  icap_current_trace_ptr_ = icap_current_trace_ptr;
+  icap_transfer_bs_ptr_ = icap_transfer_bs;
+  // icap_current_trace_ptr_ = icap_current_trace_ptr;
   icap_req_ = icap_req;
   icap_trans_ = icap_trans;
 }
@@ -51,7 +66,7 @@ void prrLevelController::step() {
 
   std::cout << "PRR_CTRL[" << prr_id_ << "]: ";
 
-  // stalling helps the simulator more closely behave as hardware would.
+  // Simulate stalls if you want states to take more than a single RRC cycle.
   //if (stall_count_ != 0) {
   //  stall_count_--;
   //  std::cout << "stalling (" << stall_count_ << " left)...\n";
@@ -64,8 +79,9 @@ void prrLevelController::step() {
 
     // the PRC is attempting to ENQUEUE its' current trace in the PRR CTRL's action queue
     if (*prc_enqueue_ && !prc_ack_) {
-      std::cout << "(trying to ENQUEUE PRC trace, ";
-      action_queue_.push(*prc_current_trace_ptr_);
+      std::cout << "(trying to ENQUEUE PRC bitstream, ";
+      // action_queue_.push(*prc_current_trace_ptr_);
+      action_queue_.push(*prc_current_task_ptr_.get());
       std::cout << "SUCCESS) ";
 
       prc_ack_ = true;
@@ -82,47 +98,46 @@ void prrLevelController::step() {
       icap_ack_ = false;
     }
 
-    rrModule* prr_content = prr_->getModuleFromRegion(prr_id_);
+    auto rr_module = prr_->getModuleFromRegion(prr_id_);
 
-    std::ostringstream prr_status;
-    prr_status << "\tPRR[" << prr_content->getRegionId() << "]: ";
+    std::ostringstream rr_status;
+    rr_status << "\tPRR[" << rr_module->getRegionId() << "]: ";
 
     //if (prr_executing_) {// && !prr_->getModuleFromRegion(prr_id_)->isRunning()) {
 
-      //bool module_finished = prr_content->step();
+      //bool module_finished = rr_module->step();
 
-      switch (prr_content->getModuleState()) {
+      switch (rr_module->getModuleState()) {
         case VACANT:
-          prr_status << "is VACANT.";
+          rr_status << "is VACANT.";
           break;
 
         case IDLE:
-          prr_status << "contains Module# " << prr_content->getModuleId()
+          rr_status << "contains Module# " << rr_module->getModuleId()
                   << " and is IDLE.";
           break;
 
         case TRANSFER:
-          prr_status << "is receiving a TRANSFER from the ICAP.";
+          rr_status << "is receiving a TRANSFER from the ICAP.";
           break;
 
         case EXEC:
-
-          if (prr_content->step()) {
-            prr_status << "just finished EXECUTING Module# " << prr_content->getModuleId()
+          if (rr_module->step()) {
+            rr_status << "just finished EXECUTING Module# " << rr_module->getModuleId()
                     << " task.";
-            prr_executing_ = false;
 
+            prr_executing_ = false;
           } else {
-            prr_status << "is EXECUTING Module# " << prr_content->getModuleId() << " ("
-                    << prr_content->getRemainingExecutionLatency()
+            rr_status << "is EXECUTING Module# " << rr_module->getModuleId() << " ("
+                    << rr_module->getRemainingExecutionLatency()
                     << " sim cycles remaining).";
           }
           break;
 
         default:
-          prr_status << "<ERROR> PRR is in an UNKNOWN STATE!\n";
+          rr_status << "<ERROR> PRR is in an UNKNOWN STATE!\n";
       }
-      prr_status << std::endl;
+      rr_status << std::endl;
 
       // if the region's resident module is finishes running, deassert PRR_EXE
       //if (module_finished)
@@ -135,6 +150,8 @@ void prrLevelController::step() {
     //   region_id = (*prc_current_trace_ptr_)->getRegionId();
     //   module_id = (*prc_current_trace_ptr_)->getModuleId();
     // }
+    const auto rr_id = prc_scheduled_bs_.region_id;
+    const auto module_id = prc_scheduled_bs_.id;
 
     switch (current_state_) {
       case PRR_INIT:
@@ -142,22 +159,30 @@ void prrLevelController::step() {
         next_state_ = PRR_IDLE;
         break;
 
-      case PRR_IDLE:
+      case PRR_IDLE: {
         std::cout << "passing IDLE stage - ";
 
-        // answering enqueued requests takes greatest priority.
+        // Answering enqueued requests takes greatest priority.
         if (action_queue_.size() != 0) {
           std::cout << "there is a pending request from the PRC ";
 
-          if (prr_content->getModuleState() == IDLE) {
-            traceToken* enqueued_trace = action_queue_.front();
+          if (rr_module->getModuleState() == IDLE) {
+            // traceToken* enqueued_trace = action_queue_.front();
+            const auto enqueued_task = action_queue_.front();
+            action_queue_.pop();
+
+            // TODO: Move fcfsScheduler::getTaskTypeId to a helper file and using that instead.
+            prev_task_type_id_ = enqueued_task.getMetadata().at("type");
+            const auto task_spec = getSpecForTaskFromBs(installed_bs_, prev_task_type_id_);
+            const auto task_speed = task_spec.speed;
+            const auto task_cycles = task_spec.cycles;
 
             std::cout << "and the module of concern is ready to go, begin EXECUTING ";
 
-            prr_content->beginExecution(sim_speed_, enqueued_trace->getExectionTime());
+            rr_module->setSpeed(task_speed);
+            rr_module->beginExecution(sim_speed_, task_cycles);
 
             prr_executing_ = true;
-            action_queue_.pop();
 
           } else {
             std::cout << "but the module of concern is currently busy.\n";
@@ -172,32 +197,40 @@ void prrLevelController::step() {
 
           // the PRC can only request a module to execute if it is actually
           // residing in it's corresponding region and the module is IDLE
-          if (prr_content->getModuleState() == VACANT) {
+          if (rr_module->getModuleState() == VACANT) {
             std::cout << "ERROR: PRC is requesting PRR CTRL to begin execution of module "
                   << "within PRR[" << prr_id_ << "] but the region is VACANT!\n";
     
-          } else if (prr_content->getModuleState() == IDLE) {
+          } else if (rr_module->getModuleState() == IDLE) {
             std::cout << "beginning EXECUTION ";
 
             // Save pointer to the current trace pointed at when the PRC made its request.
-            prc_current_trace_ = *prc_current_trace_ptr_;
+            // prc_current_trace_ = *prc_current_trace_ptr_;
+            prc_current_task_ = *prc_current_task_ptr_.get();
+            prc_scheduled_bs_ = *prc_scheduled_bs_ptr_.get();
 
             // TODO: Isn't this always the same value as assigned at line 127
             //    e.g. region_id = (*prc_current_trace_ptr_)->getRegionId();
-            auto region_id = prc_current_trace_->getRegionId();
-            prr_content = prr_->getModuleFromRegion(region_id);
+            // auto region_id = prc_current_trace_->getRegionId();
+            rr_module = prr_->getModuleFromRegion(prc_scheduled_bs_.region_id);
 
-            unsigned exe_duration = prc_current_trace_->getExectionTime();
-            prr_content->beginExecution(sim_speed_, exe_duration);
+            // TODO: Move fcfsScheduler::getTaskTypeId to a helper file and using that instead.
+            // const auto task_type_id = enqueued_task.getMetadata().at("type");
+            const auto task_spec = getSpecForTaskFromBs(installed_bs_, prev_task_type_id_);
+            const auto task_speed = task_spec.speed;
+            const auto task_cycles = task_spec.cycles;
+
+            rr_module->setSpeed(task_speed);
+            rr_module->beginExecution(sim_speed_, task_cycles);
 
             prr_executing_ = true;
 
           } else {
             std::cout << "the module cannot begin executing since it is currently occupied";
 
-            if (prr_content->getModuleState() == EXEC) {
+            if (rr_module->getModuleState() == EXEC) {
               std::cout << " EXECUTING (should have enqueued instead of PRR_START)\n";
-            } else if (prr_content->getModuleState() == TRANSFER) {
+            } else if (rr_module->getModuleState() == TRANSFER) {
               std::cout << " TRANSFERRING (should have been an ICAP_REQ)\n";
             }
           }
@@ -219,10 +252,11 @@ void prrLevelController::step() {
           std::cout << "received transfer request from ICAP.\n";
 
           // save pointer to the current trace pointed at when the ICAP made its' request
-          icap_current_trace_ = *icap_current_trace_ptr_;
+          // icap_current_trace_ = *icap_current_trace_ptr_;
+          icap_transfer_bs_ = *icap_transfer_bs_ptr_.get();
 
-          auto region_id = icap_current_trace_->getRegionId();
-          auto module_id = icap_current_trace_->getModuleId();
+          const auto region_id = icap_transfer_bs_.region_id;
+          const auto module_id = icap_transfer_bs_.id;
 
           //std::cout << "\tIs region# " << region_id << " populated?  ";
 
@@ -230,9 +264,9 @@ void prrLevelController::step() {
             //std::cout << "yes it is. ";
 
             //rrModule* region_module_content = prr_->getModuleFromRegion(region_id);
-            rrModule* region_contents = prr_->getModuleFromRegion(region_id);
+            rr_module = prr_->getModuleFromRegion(region_id);
 
-            if (region_contents->getModuleId() == module_id) {
+            if (rr_module->getModuleId() == module_id) {
               std::cout << "\tThe module in target region PRR[" << prr_id_
                     << "] is already the correct module (how did this happen?)\n";
               throw "This state should never occur.";
@@ -244,13 +278,13 @@ void prrLevelController::step() {
 
             }
 
-            if (region_contents->isRunning()) {
+            if (rr_module->isRunning()) {
               std::cout << "\tThe module in target region PRR[" << prr_id_
                     << "] is currently busy EXECUTING and can't take on the request\n";
             } else {
               // begin transfer
               icap_ack_ = true;
-              prr_content->beginTransfer();
+              rr_module->beginTransfer();
 
               next_state_ = PRR_TRANSFER;
             }
@@ -274,7 +308,7 @@ void prrLevelController::step() {
 
         //std::cout << std::endl;
         break;
-
+      }
       case PRR_WAIT:
         std::cout << "passing WAIT stage ";
 
@@ -287,29 +321,39 @@ void prrLevelController::step() {
       //  std::cout << "passing PRR ENQUEUE stage\n";
       //  break;
 
-      case PRR_TRANSFER:
+      case PRR_TRANSFER: {
         std::cout << "passing PRR TRANSFER stage";
 
         if (!*icap_trans_) {
           //prr_->
           std::cout << " - and the transfer is complete, beginning EXE ";
 
-          auto region_id = icap_current_trace_->getRegionId();
-          auto module_id = icap_current_trace_->getModuleId();
+          const auto region_id = icap_transfer_bs_.region_id;
+          const auto module_id = icap_transfer_bs_.id;
 
           // place target module into its' corresponding PRR
 
           // Get the memory level pointed at by the ICAP's memory counter.
-          auto memory_level = dynamic_cast<memoryLevel*>(memory_hierarchy_->at(*icap_mc_));
+          const auto memory_level = dynamic_cast<memoryLevel*>(memory_hierarchy_->at(*icap_mc_));
 
-          auto transferred_module = memory_level->getModule(region_id, module_id);
+          const auto transferred_module = memory_level->getModule(region_id, module_id);
 
           //transferred_module->spillGuts();
           prr_->insertModule(transferred_module);
 
-          auto exe_duration = icap_current_trace_->getExectionTime();
-          transferred_module->beginExecution(sim_speed_, exe_duration);
-          //region_contents->beginExecution(sim_speed_, exe_duration);
+          // The transferred bitstream is now installed.
+          installed_bs_ = *icap_transfer_bs_ptr_.get();
+
+          // TODO: Move fcfsScheduler::getTaskTypeId to a helper file and using that instead.
+          // const auto task_type_id = enqueued_task.getMetadata().at("type");
+          const auto task_spec = getSpecForTaskFromBs(installed_bs_, prev_task_type_id_);
+          const auto task_speed = task_spec.speed;
+          const auto task_cycles = task_spec.cycles;
+
+          // const auto exe_duration = icap_current_trace_->getExectionTime();
+          transferred_module->setSpeed(task_speed);
+          transferred_module->beginExecution(sim_speed_, task_cycles);
+          //rr_module->beginExecution(sim_speed_, exe_duration);
 
           prr_executing_ = true;
           next_state_ = PRR_IDLE;
@@ -319,7 +363,7 @@ void prrLevelController::step() {
         }
 
         break;
-
+      }
       default:
         std::cout << "ERROR: PRR Controller #" << prr_id_ << " is in an UNKNOWN STATE!\n";
         throw "Should be unreachable.";
@@ -327,7 +371,17 @@ void prrLevelController::step() {
   //}
 
   //prc_counter_++;
-  std::cout << prr_status.str();
+  std::cout << rr_status.str();
+}
+
+unsigned* prrLevelController::accessNumberSignal(prrCtrlSignal signal) {
+  switch (signal) {
+    case RRC_BITSTREAM:
+      return &bitstream_id_;
+
+    default:
+      return nullptr;
+  }
 }
 
 // PRR_EXE, PRR_PRC_ACK, PRR_ICAP_ACK

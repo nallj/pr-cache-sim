@@ -8,8 +8,8 @@
 #include <string>
 #include <vector> // vector
 
-
 #include "../globals.hpp"
+#include "../specs/taskSpec.hpp"
 
 // TODO: Consider name change to just "module;" used for SRs as well.
 class rrModule {
@@ -20,7 +20,6 @@ class rrModule {
   unsigned bitstream_width_;
   bool executing_;
   double operating_speed_;
-  std::string task_type_;
   unsigned long long execution_start_cycle_;
   unsigned long execution_time_;
   unsigned execution_latency_;
@@ -36,8 +35,9 @@ public:
     unsigned region_id,
     unsigned module_id,
     unsigned bitstream_width,
-    double speed,
-    std::string task_type
+    std::vector<taskSpec> tasks
+    // double speed,
+    // std::string task_type
   );
 
   moduleState getModuleState() const;

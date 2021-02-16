@@ -69,13 +69,10 @@ bool device::prepareAppResources(std::shared_ptr<application> app) {
     // Instantiate the bitstream library.
     for (const auto module_entry : module_specs) {
       const auto spec = module_entry.second;
-      const auto& task_types = spec.task_type_ids;
+      const auto& tasks = spec.tasks;
 
-      // Create a bitstream that implements each task type.
-      for (const auto task_type : task_types) {
-        const auto rr_space = new rrModule(region_id, spec.id, bitstream_width, spec.speed, task_type);
-        main_memory->insertModule(rr_space);
-      }
+      const auto rr_space = new rrModule(region_id, spec.id, bitstream_width, tasks);
+      main_memory->insertModule(rr_space);
     }
   }
 
@@ -87,7 +84,12 @@ bool device::prepareAppResources(std::shared_ptr<application> app) {
   bs_capabilites_ = app->getRrTaskCapabilites();
 
   icap_ = std::make_shared<icap>(app->icap_speed, app->icap_bus_width);
-  prc_ = std::make_shared<prc>(app->prc_speed, app->task_scheduling_alg, app->rr_scheduling_alg);
+  prc_ = std::make_shared<prc>(
+    app->prc_speed,
+    app->task_scheduling_alg,
+    app->rr_scheduling_alg,
+    app->rr_spec_map
+  );
 
   // return true if the bitstream library can fit in the chosen main memory
   return main_memory->getSize() >= required_bitstream_space;
@@ -134,11 +136,12 @@ void device::simulateApplication(const unsigned long long int stop_ccc) {
     prr_level_controllers[i]->connect(
 			simulation_context.accessContextSignal(PRC_START_PRR, i),
       simulation_context.accessContextSignal(PRC_ENQUEUE_PRR, i),
-      simulation_context.accessContextCounterSignal(ICAP_MC),
+      simulation_context.accessContextNumberSignal(ICAP_MC),
       simulation_context.accessContextSignal(ICAP_PRR_REQ, i),
       simulation_context.accessContextSignal(ICAP_TRANSFER_PRR),
-      simulation_context.accessContextCurrentTrace(true),
-      simulation_context.accessContextCurrentTrace(false)
+      simulation_context.accessContextCurrentTask(),
+      simulation_context.accessContextPrcScheduledBitstream(),
+      simulation_context.accessContextIcapTransferBitstream()
 		);
 	}
 
@@ -147,7 +150,7 @@ void device::simulateApplication(const unsigned long long int stop_ccc) {
   while (ccc < stop_ccc) {
 
     // Readability divider
-    std::cout << "\n------------------------------------------------------------------------------------------------------------\n";
+    std::cout << "\n-------------------------------------------------------------------------------\n";
 
     // PRC and ICAP step
     prc_->step();

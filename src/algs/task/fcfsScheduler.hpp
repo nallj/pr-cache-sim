@@ -28,14 +28,14 @@ class fcfsScheduler : public taskScheduler {
   // internal pointers n stuff
 
   void initialize();
+  graphNode& peekCurrentTask();
+  std::string peekCurrentTaskId();
   void removeCurrentTask();
 
 public:
   fcfsScheduler(std::shared_ptr<nallj::graph> task_graph);
 
-  // TODO: Do I need both peek methods?
-  std::string peekCurrentTaskId();
-  graphNode& peekCurrentTask();
+  graphNode getCurrentTask();
   // TODO: Who is the audience for this task?
   void blockCurrentTask();
   void prepareNextTask();

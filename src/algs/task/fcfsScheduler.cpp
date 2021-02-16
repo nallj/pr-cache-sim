@@ -5,14 +5,6 @@ fcfsScheduler::fcfsScheduler(std::shared_ptr<nallj::graph> task_graph) :
     initialize();
   }
 
-graphNode& fcfsScheduler::peekCurrentTask() {
-  return task_queue_.front().second;
-}
-
-std::string fcfsScheduler::peekCurrentTaskId() {
-  return task_queue_.front().first;
-}
-
 // TODO: Who is the audience for this task?
 void fcfsScheduler::blockCurrentTask() {
   // Get current task to the blocked task list.
@@ -32,6 +24,10 @@ void fcfsScheduler::blockCurrentTask() {
   removeCurrentTask();
 }
 
+graphNode fcfsScheduler::getCurrentTask() {
+  return task_queue_.front().second;
+}
+
 /**
  * Put all the start nodes of the task graph into the task queue.
  */
@@ -46,10 +42,18 @@ void fcfsScheduler::initialize() {
   }
 }
 
+graphNode& fcfsScheduler::peekCurrentTask() {
+  return task_queue_.front().second;
+}
+
+std::string fcfsScheduler::peekCurrentTaskId() {
+  return task_queue_.front().first;
+}
+
 // TODO: Consider name change (e.g. markCurrentTaskDone).
 void fcfsScheduler::prepareNextTask() {
   // Get current task.
-  const auto& current_task = peekCurrentTask();
+  const auto current_task = peekCurrentTask();
 
   // Add successors of the current task to the queue.
   const auto child_map = current_task.getTraversableNeighborMap();
